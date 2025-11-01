@@ -1,4 +1,4 @@
-<!-- Sidebar corregido -->
+<!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-header">
         <h2>Ojo en la Vía</h2>
@@ -10,17 +10,8 @@
         <li><a href="#" data-tab="usuarios"><i class="fas fa-users"></i> Gestión de Usuarios</a></li>
         <li><a href="#" data-tab="analytics"><i class="fas fa-chart-bar"></i> Analytics</a></li>
         <li><a href="#" data-tab="configuracion"><i class="fas fa-cog"></i> Configuración</a></li>
-        <li>
-            <a href="../../controllers/logoutcontrolador.php"
-               onclick="return confirmLogout()">
-               <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </a>
-        </li>
+        <li><a href="../index.php?logout=true"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
+
+
     </ul>
 </div>
-
-<script>
-function confirmLogout() {
-    return confirm('¿Estás seguro de que quieres cerrar sesión?');
-}
-</script>
