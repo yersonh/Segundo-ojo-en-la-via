@@ -22,6 +22,7 @@ class SesionControlador {
         if ($id_persona) {
             // Insertar usuario asociado a la persona (incluyendo id_estado)
             return $this->usuarioModel->insertar($id_persona, $id_rol, $id_estado, $correo, $password);
+
         }
 
         return false;
