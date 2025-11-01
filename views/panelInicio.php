@@ -496,9 +496,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                             <!-- Acciones Rápidas -->
                             <div class="profile-card">
-                                <div class="profile-card-header">
-                                    <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
-                                </div>
                                 <div class="quick-actions">
                                     <button class="quick-action-btn" id="btnEditProfile">
                                         <div class="quick-action-icon">
