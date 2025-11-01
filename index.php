@@ -4,9 +4,9 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/bootstrap_session.php';
 require_once BASE_PATH . 'config/database.php';
 require_once BASE_PATH . 'controllers/sesioncontrolador.php';
-/*require_once __DIR__ . '/phpmailer/PHPMailer.php';
+require_once __DIR__ . '/phpmailer/PHPMailer.php';
 require_once __DIR__ . '/phpmailer/SMTP.php';
-require_once __DIR__ . '/phpmailer/Exception.php';*/
+require_once __DIR__ . '/phpmailer/Exception.php';
 
 // Determinar base URL automáticamente
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
