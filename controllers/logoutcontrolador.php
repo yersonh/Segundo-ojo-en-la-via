@@ -1,7 +1,7 @@
 <?php
 // controllers/logoutcontrolador.php - Versión Mejorada
 require_once '../config/sessions.php';
-require_once __DIR__ . '/../../config/bootstrap_session.php';
+
 // Registrar el logout para auditoría
 if (isset($_SESSION['usuario_id'])) {
     $usuario_id = $_SESSION['usuario_id'];
