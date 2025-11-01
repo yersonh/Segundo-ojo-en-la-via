@@ -471,7 +471,19 @@ case 'verificar_like':
         echo json_encode(["liked" => !!$result]);
     }
     break;
+case 'contar_comentarios':
+    if (isset($_GET['id_reporte'])) {
+        $id_reporte = $_GET['id_reporte'];
+        $sql = "SELECT COUNT(*) as total_comentarios FROM comentario_reporte WHERE id_reporte = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$id_reporte]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        echo json_encode([
+            'total_comentarios' => $result['total_comentarios'] ?? 0
+        ]);
+    }
+    break;
         default:
             // Verificar output accidental
             $unexpected_output = ob_get_contents();
