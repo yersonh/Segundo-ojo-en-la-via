@@ -1,5 +1,279 @@
 <?php
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/config/bootstrap_session.php';
+require_once BASE_PATH . 'config/database.php';
+require_once BASE_PATH . 'controllers/sesioncontrolador.php';
+require_once __DIR__ . '/phpmailer/PHPMailer.php';
+require_once __DIR__ . '/phpmailer/SMTP.php';
+require_once __DIR__ . '/phpmailer/Exception.php';
 
+// Determinar base URL automáticamente
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$base_url = $protocol . "://" . $_SERVER['HTTP_HOST'];
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+$database = new Database();
+$db = $database->conectar();
+$sesionControlador = new SesionControlador($db);
+
+// 🆕 DEBUG: Verificar estado de sesión
+error_log("🔍 INDEX.PHP - Estado sesión: " . session_status());
+error_log("🔍 INDEX.PHP - Datos sesión inicial: " . print_r($_SESSION, true));
+
+// 1. VERIFICAR SI HAY COOKIE DE "RECUÉRDAME" AL CARGAR LA PÁGINA
+if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
+    $token = $_COOKIE['remember_token'];
+
+    try {
+        // Buscar el token en la base de datos CON JOIN PARA OBTENER DATOS DE PERSONA
+        $stmt = $db->prepare("SELECT
+                                u.id_usuario,
+                                u.id_rol,
+                                u.correo,
+                                p.nombres,
+                                p.apellidos,
+                                p.telefono
+                              FROM usuario u
+                              INNER JOIN persona p ON u.id_persona = p.id_persona
+                              INNER JOIN remember_tokens rt ON u.id_usuario = rt.id_usuario
+                              WHERE rt.token = :token AND rt.expiracion > NOW()");
+        $stmt->bindParam(':token', $token);
+        $stmt->execute();
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($usuario) {
+            // Iniciar sesión automáticamente CON TODOS LOS DATOS
+            $_SESSION['usuario_id'] = $usuario['id_usuario'];
+            $_SESSION['rol'] = $usuario['id_rol'];
+            $_SESSION['nombres'] = $usuario['nombres'];
+            $_SESSION['apellidos'] = $usuario['apellidos'];
+            $_SESSION['telefono'] = $usuario['telefono'];
+            $_SESSION['correo'] = $usuario['correo'];
+
+            // 🆕 FORZAR guardado en Redis
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            error_log("✅ LOGIN AUTOMÁTICO - usuario_id: " . $_SESSION['usuario_id']);
+
+            // Redirección según el rol
+            if ($usuario['id_rol'] == 1) {
+                header("Location: views/admin.php");
+            } else {
+                header("Location: views/panelInicio.php");
+            }
+            exit();
+        } else {
+            // Token inválido, eliminar cookie
+            setcookie('remember_token', '', time() - 3600, '/');
+        }
+    } catch (PDOException $e) {
+        // Si hay error con la tabla, simplemente ignorar y continuar
+        error_log("Error al verificar token de recordar: " . $e->getMessage());
+        // Eliminar cookie problemática
+        setcookie('remember_token', '', time() - 3600, '/');
+    }
+}
+
+// 2. MANEJO DEL LOGIN
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
+    // Verificar si es login normal o recuperación
+    if (isset($_POST['password'])) {
+
+        $correo = trim($_POST['email']);
+        $password = $_POST['password'];
+        $remember = isset($_POST['remember']) && $_POST['remember'] == 'on';
+
+        $usuario = $sesionControlador->login($correo, $password);
+
+        if ($usuario) {
+            // 🆕 Asegurar que la sesión esté activa
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                error_log("⚠️ Sesión no activa en login, forzando inicio");
+                require_once BASE_PATH . 'config/sessions.php';
+            }
+
+            // ✅ CORRECCIÓN: GUARDAR TODOS LOS DATOS DEL USUARIO (incluyendo de persona)
+            $_SESSION['usuario_id'] = $usuario['id_usuario'];
+            $_SESSION['rol'] = $usuario['id_rol'];
+            $_SESSION['nombres'] = $usuario['nombres'];
+            $_SESSION['apellidos'] = $usuario['apellidos'];
+            $_SESSION['telefono'] = $usuario['telefono'];
+            $_SESSION['correo'] = $usuario['correo'];
+
+            // 🆕 DEBUG después del login
+            error_log("✅ LOGIN EXITOSO - Datos COMPLETOS guardados:");
+            error_log("  usuario_id: " . $_SESSION['usuario_id']);
+            error_log("  nombres: " . $_SESSION['nombres']);
+            error_log("  apellidos: " . $_SESSION['apellidos']);
+            error_log("  telefono: " . $_SESSION['telefono']);
+            error_log("  correo: " . $_SESSION['correo']);
+            error_log("  session_id: " . session_id());
+
+            // 3. CREAR COOKIE DE "RECUÉRDAME" SI EL USUARIO LO SOLICITÓ
+            if ($remember) {
+                try {
+                    $token = bin2hex(random_bytes(32));
+                    $expiracion = date("Y-m-d H:i:s", strtotime("+30 days")); // 30 días
+
+                    // Guardar token en la base de datos
+                    $stmt = $db->prepare("INSERT INTO remember_tokens (id_usuario, token, expiracion)
+                                         VALUES (:id_usuario, :token, :expiracion)");
+                    $stmt->bindParam(':id_usuario', $usuario['id_usuario']);
+                    $stmt->bindParam(':token', $token);
+                    $stmt->bindParam(':expiracion', $expiracion);
+                    $stmt->execute();
+
+                    // Crear cookie segura (30 días)
+                    setcookie('remember_token', $token, [
+                        'expires' => time() + (30 * 24 * 60 * 60),
+                        'path' => '/',
+                        'domain' => $_SERVER['HTTP_HOST'],
+                        'secure' => ($protocol === 'https'),
+                        'httponly' => true,
+                        'samesite' => 'Strict'
+                    ]);
+                } catch (PDOException $e) {
+                    // Si hay error al insertar, simplemente continuar sin recordar
+                    error_log("Error al crear token de recordar: " . $e->getMessage());
+                }
+            }
+
+            // 🆕 FORZAR guardado en Redis antes de redireccionar
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
+            // Redirección según el rol del usuario
+            if ($usuario['id_rol'] == 1) {
+                header("Location: views/admin.php");
+            } else {
+                header("Location: views/panelInicio.php");
+            }
+            exit();
+        } else {
+            $error_message = "Credenciales incorrectas o cuenta inactiva.";
+        }
+    } else {
+         // Procesar recuperación de contraseña
+        $correoRecuperacion = trim($_POST['email']);
+        $mensaje_recuperacion = procesarRecuperacion($db, $correoRecuperacion, $base_url);
+
+        // ✅ CORRECIÓN: Guardar mensaje en sesión para mostrarlo después
+        $_SESSION['mensaje_recuperacion'] = $mensaje_recuperacion;
+
+        // ✅ Redirigir al mismo index para mostrar el mensaje
+        header("Location: index.php");
+        exit();
+    }
+}
+
+// ✅ CORRECIÓN: Mostrar mensaje de recuperación desde sesión
+if (isset($_SESSION['mensaje_recuperacion'])) {
+    $mensaje_recuperacion = $_SESSION['mensaje_recuperacion'];
+    unset($_SESSION['mensaje_recuperacion']); // Limpiar después de mostrar
+}
+
+//FUNCIÓN PARA LIMPIAR TOKENS EXPIRADOS
+function limpiarTokensExpirados($db) {
+    try {
+        $stmt = $db->prepare("DELETE FROM remember_tokens WHERE expiracion < NOW()");
+        $stmt->execute();
+        return true;
+    } catch (PDOException $e) {
+        error_log("Error al limpiar tokens expirados: " . $e->getMessage());
+        return false;
+    }
+}
+
+// EJECUTAR LIMPIEZA PERIÓDICA
+if (rand(1, 10) === 1) { // 10% de probabilidad en cada carga
+    try {
+        limpiarTokensExpirados($db);
+    } catch (Exception $e) {
+        // Ignorar errores de limpieza
+        error_log("Error en limpieza periódica: " . $e->getMessage());
+    }
+}
+
+// Función para procesar recuperación de contraseña
+function procesarRecuperacion($db, $correoUsuario, $base_url) {
+    // Verificar si el correo existe
+    $stmt = $db->prepare("SELECT * FROM usuario WHERE correo = :correo LIMIT 1");
+    $stmt->bindParam(':correo', $correoUsuario);
+    $stmt->execute();
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($usuario) {
+        $token = bin2hex(random_bytes(32));
+        $expiracion = date("Y-m-d H:i:s", strtotime("+1 hour"));
+
+        $stmtToken = $db->prepare("INSERT INTO recovery_tokens (id_usuario, token, expiracion) VALUES (:id_usuario, :token, :expiracion)");
+        $stmtToken->bindParam(':id_usuario', $usuario['id_usuario']);
+        $stmtToken->bindParam(':token', $token);
+        $stmtToken->bindParam(':expiracion', $expiracion);
+
+        if ($stmtToken->execute()) {
+            $link = "{$base_url}/views/manage/nueva_contraseña.php?token={$token}";
+
+            $payload = [
+                "sender" => [
+                    "name"  => getenv('SMTP_FROM_NAME') ?: "Soporte - Ojo en la Vía",
+                    "email" => getenv('SMTP_FROM') ?: "988a48002@smtp-brevo.com"
+                ],
+                "to" => [
+                    ["email" => $correoUsuario]
+                ],
+                "subject" => "Recuperación de contraseña - Ojo en la Vía",
+                "htmlContent" => "
+                    <h2>Recuperación de Contraseña</h2>
+                    <p>Hola,</p>
+                    <p>Hemos recibido una solicitud para restablecer tu contraseña en <strong>Ojo en la Vía</strong>.</p>
+                    <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
+                    <p>
+                        <a href='{$link}'
+                           style='background: #1e8ee9; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>
+                            Restablecer Contraseña
+                        </a>
+                    </p>
+                    <p><strong>Este enlace expirará en 1 hora.</strong></p>
+                    <p>Si no solicitaste este cambio, ignora este mensaje.</p>
+                    <br>
+                    <p>Saludos,<br>El equipo de Ojo en la Vía</p>
+                "
+            ];
+
+            $apiKey = getenv('BREVO_API_KEY');
+            $ch = curl_init("https://api.brevo.com/v3/smtp/email");
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Accept: application/json",
+                "Content-Type: application/json",
+                "api-key: $apiKey"
+            ]);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                return "✅ Se ha enviado un enlace de recuperación a: $correoUsuario";
+            }
+            else {
+                return "❌ Error al enviar el correo (Código: $httpCode). Respuesta: $response";
+            }
+        } else {
+            return "❌ Error al generar el enlace de recuperación.";
+        }
+    } else {
+        return "❌ El correo ingresado no está registrado en nuestro sistema.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
