@@ -1,43 +1,27 @@
 <?php
-// controllers/logoutcontrolador.php - Versión Mejorada
 require_once '../config/sessions.php';
 
-// Registrar el logout para auditoría
-if (isset($_SESSION['usuario_id'])) {
-    $usuario_id = $_SESSION['usuario_id'];
-    $fecha_logout = date('Y-m-d H:i:s');
-
-    // Aquí podrías guardar en la base de datos el registro de logout
-    // auditLog($usuario_id, 'logout', $fecha_logout);
-}
-
-// Limpiar tokens de remember me si existen
+// Eliminar token de "Recuérdame" si existe
 if (isset($_COOKIE['remember_token'])) {
-    setcookie('remember_token', '', time() - 3600, '/');
+    require_once 'config/database.php';
+    $database = new Database();
+    $db = $database->conectar();
+
+    $stmt = $db->prepare("DELETE FROM remember_tokens WHERE token = :token");
+    $stmt->bindParam(':token', $_COOKIE['remember_token']);
+    $stmt->execute();
+
+    // Eliminar cookie
+    setcookie('remember_token', '', time() - 3600, '/', '', false, true);
 }
 
 // Destruir todas las variables de sesión
 $_SESSION = array();
 
-// Destruir cookie de sesión
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
-}
-
-// Destruir sesión
+// Destruir la sesión
 session_destroy();
 
-// Redirigir al login con mensaje
-header("Location: ../index.php?logout=1");
+// Redirigir al login
+header("Location: ../index.php");
 exit();
-
-// Función para logs de auditoría (opcional)
-function auditLog($usuario_id, $accion, $fecha) {
-    // Implementar según tu estructura de base de datos
-    // Ejemplo: INSERT INTO audit_log (usuario_id, accion, fecha) VALUES (...)
-}
 ?>
