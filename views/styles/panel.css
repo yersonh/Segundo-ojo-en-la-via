@@ -133,21 +133,62 @@ body, html {
     border-color: var(--primary);
     transform: scale(1.05);
 }
+/* Definir variables CSS para modo claro y oscuro */
+:root {
+  /* Modo claro (default) - Tema blanco */
+  --btn-bg: #ffffff;
+  --btn-border: #e0e0e0;
+  --btn-text: #333333;
+  --btn-bg-hover: #f8f9fa;
+  --btn-border-hover: #cccccc;
+  --btn-text-hover: #000000;
+  --btn-shadow: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Modo oscuro - Tema negro */
+    --btn-bg: #1a1a1a;
+    --btn-border: #404040;
+    --btn-text: #ffffff;
+    --btn-bg-hover: #2d2d2d;
+    --btn-border-hover: #666666;
+    --btn-text-hover: #f0f0f0;
+    --btn-shadow: rgba(0, 0, 0, 0.3);
+  }
+}
+
 /* Estilos específicos para el botón de ver en mapa */
 .view-map-btn {
-    background: var(--primary-light);
-    border-color: var(--primary-light);
-    color: var(--primary-dark);
+    background: var(--btn-bg);
+    border: 2px solid var(--btn-border);
+    color: var(--btn-text);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
 }
 
 .view-map-btn:hover {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: white;
+    background: var(--btn-bg-hover);
+    border-color: var(--btn-border-hover);
+    color: var(--btn-text-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--btn-shadow);
+}
+
+.view-map-btn:active {
+    transform: translateY(0);
 }
 
 .view-map-btn i {
     color: inherit;
+    font-size: 1.1em;
 }
 /* ============================================= */
 /* 3. CONTENEDOR PRINCIPAL */
