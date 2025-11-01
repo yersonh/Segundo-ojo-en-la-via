@@ -1,0 +1,31 @@
+RewriteEngine On
+
+# EXCEPCIÓN para Service Worker - NO redirigir sw.js
+RewriteCond %{REQUEST_URI} !^/sw\.js$
+
+# Redirigir todas las demás solicitudes a index.php si el archivo no existe
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Configurar directorio por defecto
+DirectoryIndex index.php
+
+# Configurar MIME types correctos
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType text/javascript .js
+</IfModule>
+
+# Headers específicos para Service Worker
+<Files "sw.js">
+    Header set Service-Worker-Allowed "/"
+    Header set Content-Type "application/javascript"
+    Header set Cache-Control "no-cache"
+</Files>
+
+# Permitir reescritura de URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+</IfModule>
