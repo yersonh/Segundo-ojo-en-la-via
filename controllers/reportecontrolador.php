@@ -474,13 +474,26 @@ case 'verificar_like':
 case 'contar_comentarios':
     if (isset($_GET['id_reporte'])) {
         $id_reporte = $_GET['id_reporte'];
-        $sql = "SELECT COUNT(*) as total_comentarios FROM comentario_reporte WHERE id_reporte = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$id_reporte]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        try {
+            $sql = "SELECT COUNT(*) as total_comentarios FROM comentario_reporte WHERE id_reporte = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$id_reporte]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'total_comentarios' => (int)$result['total_comentarios']
+            ]);
+
+        } catch (PDOException $e) {
+            error_log("Error contando comentarios: " . $e->getMessage());
+            echo json_encode([
+                'total_comentarios' => 0
+            ]);
+        }
+    } else {
         echo json_encode([
-            'total_comentarios' => $result['total_comentarios'] ?? 0
+            'total_comentarios' => 0
         ]);
     }
     break;
