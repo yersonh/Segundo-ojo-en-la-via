@@ -49,95 +49,84 @@ class NotificationManager {
     }
 
     setupEventListeners() {
-        // Toggle panel de notificaciones
-        const notifIcon = document.getElementById('notificacionIcon');
-        const notifPanel = document.getElementById('notificacionesPanel');
+    // Toggle panel de notificaciones
+    const notifIcon = document.getElementById('notificacionIcon');
+    const notifPanel = document.getElementById('notificacionesPanel');
 
-        if (notifIcon && notifPanel) {
-            notifIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notifPanel.classList.toggle('show');
-                this.initAudioContext();
-            });
-        }
+    console.log('🔍 Elementos del panel:', { notifIcon, notifPanel });
 
-        // Cerrar panel al hacer click fuera
-        document.addEventListener('click', (e) => {
-            if (notifPanel && !notifPanel.contains(e.target) && !notifIcon.contains(e.target)) {
-                notifPanel.classList.remove('show');
-            }
-        });
-
-        // Marcar todas como leídas
-        const marcarTodasBtn = document.getElementById('marcarTodasLeidas');
-        if (marcarTodasBtn) {
-            marcarTodasBtn.addEventListener('click', () => {
-                this.marcarTodasLeidas();
-                this.initAudioContext();
-            });
-        }
-
-        // Delegación de eventos para botones dinámicos
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-marcar-leida')) {
-                const notifItem = e.target.closest('.notificacion-item');
-                if (notifItem) {
-                    const idNotificacion = notifItem.dataset.id;
-                    this.marcarComoLeida(idNotificacion, notifItem);
-                    this.initAudioContext();
-                }
-            }
-        });
-
-        // Inicializar AudioContext con cualquier click
-        document.addEventListener('click', () => {
-            this.initAudioContext();
-        });
-    }
-
-    setupPanelNotificaciones() {
-        const notifIcon = document.getElementById('notificacionIcon');
-        const notifPanel = document.getElementById('notificacionesPanel');
-
-        if (!notifIcon || !notifPanel) {
-            console.warn('❌ Elementos del panel de notificaciones no encontrados');
-            return;
-        }
-
-        // Toggle panel y cargar notificaciones
+    if (notifIcon && notifPanel) {
         notifIcon.addEventListener('click', async (e) => {
             e.stopPropagation();
+            console.log('🖱️ Click en icono de notificaciones');
             const isOpening = !notifPanel.classList.contains('show');
             notifPanel.classList.toggle('show');
+            console.log('📂 Panel estado:', notifPanel.classList.contains('show') ? 'abierto' : 'cerrado');
 
+            // Cargar notificaciones solo cuando se abre el panel
             if (isOpening) {
+                console.log('📥 Cargando notificaciones...');
                 await this.cargarNotificacionesPanel();
             }
+
+            this.initAudioContext();
         });
 
         // Cerrar panel al hacer click fuera
         document.addEventListener('click', (e) => {
             if (!notifPanel.contains(e.target) && !notifIcon.contains(e.target)) {
+                console.log('🚪 Cerrando panel (click fuera)');
                 notifPanel.classList.remove('show');
             }
         });
-
-        console.log('✅ Panel de notificaciones configurado');
+    } else {
+        console.warn('❌ No se encontraron elementos del panel de notificaciones');
     }
+
+    // Marcar todas como leídas
+    const marcarTodasBtn = document.getElementById('marcarTodasLeidas');
+    if (marcarTodasBtn) {
+        marcarTodasBtn.addEventListener('click', () => {
+            this.marcarTodasLeidas();
+            this.initAudioContext();
+        });
+    }
+
+    // Delegación de eventos para botones dinámicos
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-marcar-leida')) {
+            const notifItem = e.target.closest('.notificacion-item');
+            if (notifItem) {
+                const idNotificacion = notifItem.dataset.id;
+                this.marcarComoLeida(idNotificacion, notifItem);
+                this.initAudioContext();
+            }
+        }
+    });
+
+    // Inicializar AudioContext con cualquier click
+    document.addEventListener('click', () => {
+        this.initAudioContext();
+    });
+}
 
     async cargarNotificacionesPanel() {
-        try {
-            const response = await fetch('../controllers/notificacion_controlador.php?action=obtener_nuevas');
-            const data = await response.json();
+    try {
+        console.log('📡 Cargando notificaciones del panel...');
+        const response = await fetch('../controllers/notificacion_controlador.php?action=obtener_nuevas');
+        const data = await response.json();
 
-            if (data.success) {
-                this.actualizarPanelNotificaciones(data.notificaciones);
-                this.actualizarContadorNotificaciones(data.total_nuevas);
-            }
-        } catch (error) {
-            console.error('Error cargando notificaciones del panel:', error);
+        if (data.success) {
+            console.log(`📨 ${data.notificaciones.length} notificaciones cargadas`);
+            this.actualizarPanelNotificaciones(data.notificaciones);
+            this.actualizarContadorNotificaciones(data.total_nuevas);
+        } else {
+            console.error('❌ Error cargando notificaciones:', data.error);
         }
+    } catch (error) {
+        console.error('❌ Error cargando notificaciones del panel:', error);
     }
+}
 
     initAudioContext() {
         if (this.audioContext || !window.AudioContext) return;
