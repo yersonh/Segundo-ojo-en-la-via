@@ -41,24 +41,28 @@
                                     <?php echo $reporte['estado']; ?>
                                 </span>
                             </td>
-                            <td>
-                                <select class="cambiar-estado" data-id="<?php echo $reporte['id_reporte']; ?>">
-                                    <option value="Pendiente" <?php echo $reporte['estado'] == 'Pendiente' ? 'selected' : ''; ?>>Pendiente</option>
-                                    <option value="En Proceso" <?php echo $reporte['estado'] == 'En Proceso' ? 'selected' : ''; ?>>En Proceso</option>
-                                    <option value="Resuelto" <?php echo $reporte['estado'] == 'Resuelto' ? 'selected' : ''; ?>>Resuelto</option>
-                                    <option value="Notificado" <?php echo $reporte['estado'] == 'Notificado' ? 'selected' : ''; ?>>Notificado</option>
-                                </select>
+                            <td class="acciones-cell">
+                                <div class="acciones-container">
+                                    <select class="cambiar-estado" data-id="<?php echo $reporte['id_reporte']; ?>">
+                                        <option value="Pendiente" <?php echo $reporte['estado'] == 'Pendiente' ? 'selected' : ''; ?>>Pendiente</option>
+                                        <option value="En Proceso" <?php echo $reporte['estado'] == 'En Proceso' ? 'selected' : ''; ?>>En Proceso</option>
+                                        <option value="Resuelto" <?php echo $reporte['estado'] == 'Resuelto' ? 'selected' : ''; ?>>Resuelto</option>
+                                        <option value="Notificado" <?php echo $reporte['estado'] == 'Notificado' ? 'selected' : ''; ?>>Notificado</option>
+                                    </select>
 
-                                <!-- Botón de alerta -->
-                                <button class="btn btn-warning btn-sm btn-alerta"
-                                        data-id="<?php echo $reporte['id_reporte']; ?>"
-                                        title="Enviar alerta a autoridad">
-                                    <i class="fas fa-bell"></i>
-                                </button>
+                                    <!-- Botón de alerta centrado -->
+                                    <div class="btn-alerta-container">
+                                        <button class="btn btn-warning btn-sm btn-alerta"
+                                                data-id="<?php echo $reporte['id_reporte']; ?>"
+                                                title="Enviar alerta a autoridad">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                    </div>
 
-                                <button class="btn btn-danger btn-sm eliminar-reporte" data-id="<?php echo $reporte['id_reporte']; ?>">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                    <button class="btn btn-danger btn-sm eliminar-reporte" data-id="<?php echo $reporte['id_reporte']; ?>">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>

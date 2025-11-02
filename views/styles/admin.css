@@ -1401,18 +1401,62 @@ html, body {
     border-bottom: none;
 }
 
+/* Contenedor de acciones */
+.acciones-cell {
+    width: 200px;
+    min-width: 200px;
+}
+
+.acciones-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    width: 100%;
+}
+
+/* Contenedor específico para el botón de alerta */
+.btn-alerta-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
 /* Botón de alerta */
 .btn-alerta {
     background: #f39c12;
     border-color: #f39c12;
     color: white;
-    margin: 0 2px;
+    margin: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-alerta:hover {
     background: #e67e22;
     border-color: #e67e22;
     color: white;
+    transform: scale(1.05);
+}
+
+/* Select de estado */
+.cambiar-estado {
+    flex: 1;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+/* Botón eliminar */
+.eliminar-reporte {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Badge para estado Notificado */
@@ -1421,6 +1465,40 @@ html, body {
     color: white;
 }
 
+/* Asegurar que la tabla sea responsive */
+.table-responsive {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Para pantallas más pequeñas */
+@media (max-width: 768px) {
+    .acciones-container {
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .acciones-cell {
+        width: 150px;
+        min-width: 150px;
+    }
+
+    .cambiar-estado {
+        min-width: 100px;
+        max-width: 100px;
+    }
+}
 /* Notificaciones */
 .notificaciones-wrapper {
     position: relative;
