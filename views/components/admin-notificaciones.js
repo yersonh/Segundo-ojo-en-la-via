@@ -1,4 +1,4 @@
-// views/components/admin-notificaciones.js - VERSIÓN SIMPLIFICADA SIN TOKEN
+// views/components/admin-notificaciones.js - VERSIÓN CON RUTAS ABSOLUTAS
 class NotificationManager {
     constructor() {
         this.eventSource = null;
@@ -47,92 +47,124 @@ class NotificationManager {
                document.querySelector('.admin-container') !== null;
     }
 
-    setupEventListeners() {
-    // Toggle panel de notificaciones
-    const notifIcon = document.getElementById('notificacionIcon');
-    const notifPanel = document.getElementById('notificacionesPanel');
+    // 🆕 MÉTODO PARA OBTENER LA RUTA BASE CORRECTA
+    getBaseUrl() {
+        const path = window.location.pathname;
+        console.log('📍 Path actual:', path);
 
-    console.log('🔍 Elementos del panel:', { notifIcon, notifPanel });
-
-    if (notifIcon && notifPanel) {
-        notifIcon.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            console.log('🖱️ Click en icono de notificaciones');
-            const isOpening = !notifPanel.classList.contains('show');
-            notifPanel.classList.toggle('show');
-            console.log('📂 Panel estado:', notifPanel.classList.contains('show') ? 'abierto' : 'cerrado');
-
-            // Cargar notificaciones solo cuando se abre el panel
-            if (isOpening) {
-                console.log('📥 Cargando notificaciones...');
-                await this.cargarNotificacionesPanel();
-            }
-
-            this.initAudioContext();
-        });
-
-        // Cerrar panel al hacer click fuera
-        document.addEventListener('click', (e) => {
-            if (!notifPanel.contains(e.target) && !notifIcon.contains(e.target)) {
-                console.log('🚪 Cerrando panel (click fuera)');
-                notifPanel.classList.remove('show');
-            }
-        });
-    } else {
-        console.warn('❌ No se encontraron elementos del panel de notificaciones');
-    }
-
-    // Marcar todas como leídas
-    const marcarTodasBtn = document.getElementById('marcarTodasLeidas');
-    if (marcarTodasBtn) {
-        marcarTodasBtn.addEventListener('click', () => {
-            this.marcarTodasLeidas();
-            this.initAudioContext();
-        });
-    }
-
-    // Delegación de eventos para botones dinámicos
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-marcar-leida')) {
-            const notifItem = e.target.closest('.notificacion-item');
-            if (notifItem) {
-                const idNotificacion = notifItem.dataset.id;
-                this.marcarComoLeida(idNotificacion, notifItem);
-                this.initAudioContext();
-            }
+        // Si estamos en /views/components/admin.php o similar
+        if (path.includes('/views/')) {
+            const basePath = path.split('/views/')[0];
+            return window.location.origin + basePath;
         }
-    });
+        // Si estamos directamente en admin.php
+        else if (path.includes('admin.php')) {
+            const basePath = path.split('/').slice(0, -1).join('/');
+            return window.location.origin + basePath;
+        }
+        // Por defecto
+        else {
+            return window.location.origin;
+        }
+    }
 
-    // Inicializar AudioContext con cualquier click
-    document.addEventListener('click', () => {
-        this.initAudioContext();
-    });
-}
+    // 🆕 MÉTODO PARA CONSTRUIR URLS ABSOLUTAS
+    buildUrl(endpoint) {
+        const baseUrl = this.getBaseUrl();
+        const url = `${baseUrl}/controllers/${endpoint}`;
+        console.log('🔗 URL construida:', url);
+        return url;
+    }
+
+    setupEventListeners() {
+        // Toggle panel de notificaciones
+        const notifIcon = document.getElementById('notificacionIcon');
+        const notifPanel = document.getElementById('notificacionesPanel');
+
+        console.log('🔍 Elementos del panel:', { notifIcon, notifPanel });
+
+        if (notifIcon && notifPanel) {
+            notifIcon.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                console.log('🖱️ Click en icono de notificaciones');
+                const isOpening = !notifPanel.classList.contains('show');
+                notifPanel.classList.toggle('show');
+                console.log('📂 Panel estado:', notifPanel.classList.contains('show') ? 'abierto' : 'cerrado');
+
+                // Cargar notificaciones solo cuando se abre el panel
+                if (isOpening) {
+                    console.log('📥 Cargando notificaciones...');
+                    await this.cargarNotificacionesPanel();
+                }
+
+                this.initAudioContext();
+            });
+
+            // Cerrar panel al hacer click fuera
+            document.addEventListener('click', (e) => {
+                if (!notifPanel.contains(e.target) && !notifIcon.contains(e.target)) {
+                    console.log('🚪 Cerrando panel (click fuera)');
+                    notifPanel.classList.remove('show');
+                }
+            });
+        } else {
+            console.warn('❌ No se encontraron elementos del panel de notificaciones');
+        }
+
+        // Marcar todas como leídas
+        const marcarTodasBtn = document.getElementById('marcarTodasLeidas');
+        if (marcarTodasBtn) {
+            marcarTodasBtn.addEventListener('click', () => {
+                this.marcarTodasLeidas();
+                this.initAudioContext();
+            });
+        }
+
+        // Delegación de eventos para botones dinámicos
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-marcar-leida')) {
+                const notifItem = e.target.closest('.notificacion-item');
+                if (notifItem) {
+                    const idNotificacion = notifItem.dataset.id;
+                    this.marcarComoLeida(idNotificacion, notifItem);
+                    this.initAudioContext();
+                }
+            }
+        });
+
+        // Inicializar AudioContext con cualquier click
+        document.addEventListener('click', () => {
+            this.initAudioContext();
+        });
+    }
 
     async cargarNotificacionesPanel() {
-    try {
-        console.log('📡 Cargando notificaciones del panel...');
-        const response = await fetch('../../controllers/notificacion_controlador.php?action=obtener_nuevas', {
-            credentials: 'include'  // 🆕 ESTO ES CLAVE
-        });
+        try {
+            console.log('📡 Cargando notificaciones del panel...');
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const url = this.buildUrl('notificacion_controlador.php?action=obtener_nuevas');
+
+            const response = await fetch(url, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log(`📨 ${data.notificaciones.length} notificaciones cargadas`);
+                this.actualizarPanelNotificaciones(data.notificaciones);
+                this.actualizarContadorNotificaciones(data.total_nuevas);
+            } else {
+                console.error('❌ Error cargando notificaciones:', data.error);
+            }
+        } catch (error) {
+            console.error('❌ Error cargando notificaciones del panel:', error);
         }
-
-        const data = await response.json();
-
-        if (data.success) {
-            console.log(`📨 ${data.notificaciones.length} notificaciones cargadas`);
-            this.actualizarPanelNotificaciones(data.notificaciones);
-            this.actualizarContadorNotificaciones(data.total_nuevas);
-        } else {
-            console.error('❌ Error cargando notificaciones:', data.error);
-        }
-    } catch (error) {
-        console.error('❌ Error cargando notificaciones del panel:', error);
     }
-}
 
     initAudioContext() {
         if (this.audioContext || !window.AudioContext) return;
@@ -145,7 +177,7 @@ class NotificationManager {
         }
     }
 
-    // 🆕 CONEXIÓN SSE SIMPLIFICADA SIN TOKEN
+    // 🆕 CONEXIÓN SSE CON RUTA ABSOLUTA
     connectSSE() {
         if (document.visibilityState === 'hidden') {
             console.log('👻 Página en background - no conectar SSE');
@@ -168,9 +200,9 @@ class NotificationManager {
         }
 
         try {
-            // 🆕 URL DIRECTA SIN TOKEN
-            const sseUrl = '../../controllers/sse_notificaciones.php';
-            console.log('🔌 Conectando a SSE directamente...');
+            // 🆕 URL ABSOLUTA PARA SSE
+            const sseUrl = this.buildUrl('sse_notificaciones.php');
+            console.log('🔌 Conectando a SSE:', sseUrl);
 
             // Timeout de conexión por seguridad
             const connectTimeout = setTimeout(() => {
@@ -302,27 +334,29 @@ class NotificationManager {
     }
 
     async verificarNotificacionesPolling() {
-    try {
-        const response = await fetch(`../../controllers/notificacion_controlador.php?action=obtener_nuevas`, {
-            credentials: 'include'
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.notificaciones && data.notificaciones.length > 0) {
-            console.log(`📨 ${data.notificaciones.length} nuevas notificaciones vía polling`);
-            data.notificaciones.forEach(notif => {
-                this.handleNuevaNotificacion(notif);
+        try {
+            const url = this.buildUrl('notificacion_controlador.php?action=obtener_nuevas');
+            const response = await fetch(url, {
+                credentials: 'include'
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.notificaciones && data.notificaciones.length > 0) {
+                console.log(`📨 ${data.notificaciones.length} nuevas notificaciones vía polling`);
+                data.notificaciones.forEach(notif => {
+                    this.handleNuevaNotificacion(notif);
+                });
+            }
+        } catch (error) {
+            console.error('Error en polling:', error);
         }
-    } catch (error) {
-        console.error('Error en polling:', error);
     }
-}
+
     disconnectSSE() {
         if (this.eventSource) {
             this.eventSource.close();
@@ -609,65 +643,67 @@ class NotificationManager {
     }
 
     async marcarComoLeida(idNotificacion, element) {
-    try {
-        const formData = new FormData();
-        formData.append('id_notificacion', idNotificacion);
-        formData.append('action', 'marcar_notificacion_leida');
+        try {
+            const formData = new FormData();
+            formData.append('id_notificacion', idNotificacion);
+            formData.append('action', 'marcar_notificacion_leida');
 
-        const response = await fetch('../../controllers/notificacion_controlador.php', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'  // 🆕 AGREGAR
-        });
+            const url = this.buildUrl('notificacion_controlador.php');
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                element.classList.remove('no-leida');
+                element.querySelector('.btn-marcar-leida')?.remove();
+                this.updateNotificationBadge(-1);
+                this.showToast('Notificación marcada como leída', 'success');
+            }
+        } catch (error) {
+            console.error('Error marcando notificación como leída:', error);
+            this.showToast('Error al marcar como leída', 'error');
         }
-
-        const result = await response.json();
-
-        if (result.success) {
-            element.classList.remove('no-leida');
-            element.querySelector('.btn-marcar-leida')?.remove();
-            this.updateNotificationBadge(-1);
-            this.showToast('Notificación marcada como leída', 'success');
-        }
-    } catch (error) {
-        console.error('Error marcando notificación como leída:', error);
-        this.showToast('Error al marcar como leída', 'error');
     }
-}
 
     async marcarTodasLeidas() {
-    try {
-        const formData = new FormData();
-        formData.append('action', 'marcar_todas_leidas');
+        try {
+            const formData = new FormData();
+            formData.append('action', 'marcar_todas_leidas');
 
-        const response = await fetch('../../controllers/notificacion_controlador.php', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'  // 🆕 AGREGAR
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
-                item.classList.remove('no-leida');
-                item.querySelector('.btn-marcar-leida')?.remove();
+            const url = this.buildUrl('notificacion_controlador.php');
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
             });
-            this.updateNotificationBadge(0);
-            this.showToast('Todas las notificaciones marcadas como leídas', 'success');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
+                    item.classList.remove('no-leida');
+                    item.querySelector('.btn-marcar-leida')?.remove();
+                });
+                this.updateNotificationBadge(0);
+                this.showToast('Todas las notificaciones marcadas como leídas', 'success');
+            }
+        } catch (error) {
+            console.error('Error marcando todas como leídas:', error);
+            this.showToast('Error al marcar todas como leídas', 'error');
         }
-    } catch (error) {
-        console.error('Error marcando todas como leídas:', error);
-        this.showToast('Error al marcar todas como leídas', 'error');
     }
-}
 
     updateNotificationBadge(count) {
         const badge = document.querySelector('.notificacion-badge');
