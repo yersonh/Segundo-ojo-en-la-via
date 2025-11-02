@@ -609,77 +609,30 @@
             }
 
             // Función para cargar comentarios de un post
-async function cargarComentariosPost(id_reporte, postElement) {
-    try {
-        const resp = await fetch(`../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
-            credentials: 'include'
-        });
+            async function cargarComentariosPost(id_reporte, postElement) {
+                try {
+                    const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
+                        credentials: 'include'
+                    });
+                    const data = await resp.json();
 
-        if (!resp.ok) {
-            throw new Error(`Error HTTP: ${resp.status}`);
-        }
-
-        const data = await resp.json();
-
-        const commentBtn = postElement.querySelector('.comment-btn');
-        if (commentBtn) {
-            // ✅ BUSCAR CORRECTAMENTE EL ELEMENTO SPAN DENTRO DEL BOTÓN
-            const spans = commentBtn.querySelectorAll('span');
-            let commentText = null;
-
-            // Buscar el span que no tenga la clase 'like-count'
-            for (let span of spans) {
-                if (!span.classList.contains('like-count')) {
-                    commentText = span;
-                    break;
+                    const commentBtn = postElement.querySelector('.comment-btn');
+                    if (commentBtn && data.total_comentarios !== undefined) {
+                        const commentText = commentBtn.querySelector('span');
+                        if (commentText) {
+                            commentText.textContent = `Comentarios (${data.total_comentarios})`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando comentarios:', error);
                 }
             }
-
-            // Si no encontró un span adecuado, usar el primer span o crear uno
-            if (!commentText && spans.length > 0) {
-                commentText = spans[0];
-            }
-
-            if (commentText) {
-                commentText.textContent = `Comentarios (${data.total_comentarios || 0})`;
-            } else {
-                // Si no hay span, poner el texto directamente en el botón
-                const likeCount = commentBtn.querySelector('.like-count');
-                if (likeCount) {
-                    // Si tiene like-count, poner el texto después
-                    commentBtn.innerHTML = `<i class="fas fa-comment"></i> Comentarios (${data.total_comentarios || 0}) ${likeCount.outerHTML}`;
-                } else {
-                    commentBtn.innerHTML = `<i class="fas fa-comment"></i> Comentarios (${data.total_comentarios || 0})`;
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error cargando comentarios:', error);
-        // Asegurar que muestre 0 si hay error
-        const commentBtn = postElement.querySelector('.comment-btn');
-        if (commentBtn) {
-            const spans = commentBtn.querySelectorAll('span');
-            let commentText = null;
-
-            for (let span of spans) {
-                if (!span.classList.contains('like-count')) {
-                    commentText = span;
-                    break;
-                }
-            }
-
-            if (commentText) {
-                commentText.textContent = 'Comentarios (0)';
-            }
-        }
-    }
-}
 
             // Función para verificar si el usuario actual dio like
             async function verificarLikeUsuario(id_reporte, postElement) {
                 try {
                     const id_usuario = await obtenerUsuarioId();
-                    const formData = new FormData();
+                    const formData = new FormdData();
                     formData.append('id_reporte', id_reporte);
                     formData.append('id_usuario', id_usuario);
 
