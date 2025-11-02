@@ -1,4 +1,4 @@
-// admin.js - Versión completa con actualizaciones en tiempo real
+// admin.js - Versión completa sin confirmaciones para cambios de estado
 class AdminManager {
     constructor() {
         this.map = null;
@@ -683,7 +683,6 @@ class AdminManager {
         .then(response => {
             if (response.ok) {
                 this.cerrarModalAlerta();
-                // ✅ ELIMINADO: location.reload() - Ahora solo muestra mensaje de éxito
                 this.mostrarNotificacion('✅ Alerta enviada correctamente', 'success');
             } else {
                 alert('Error al enviar la alerta');
@@ -751,9 +750,6 @@ class AdminManager {
         this.markers.forEach(marker => {
             const popupContent = marker.getPopup().getContent();
             if (popupContent && popupContent.includes(`#${idReporte}`)) {
-                // Recrear el popup con el nuevo estado
-                // Esto requeriría tener acceso a los datos del reporte
-                // Por simplicidad, podríamos recargar solo los marcadores afectados
                 setTimeout(() => {
                     this.cargarReportesEnMapa();
                 }, 500);
@@ -762,32 +758,57 @@ class AdminManager {
     }
 }
 
-// Métodos estáticos - MODIFICADOS para ser en tiempo real
+// Métodos estáticos - SIN CONFIRMACIONES para cambios de estado
 AdminManager.cambiarEstadoReporte = async function(idReporte, nuevoEstado) {
-    if (confirm(`¿Cambiar estado del reporte #${idReporte} a "${nuevoEstado}"?`)) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'cambiar_estado_reporte');
-            formData.append('id_reporte', idReporte);
-            formData.append('nuevo_estado', nuevoEstado);
+    try {
+        // Mostrar estado de loading en el select
+        const selectEstado = document.querySelector(`select.cambiar-estado[data-id="${idReporte}"]`);
+        const originalValue = selectEstado.value;
 
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
+        // Cambiar inmediatamente en la UI para mejor experiencia de usuario
+        if (selectEstado) {
+            selectEstado.disabled = true;
+            selectEstado.style.opacity = '0.7';
+        }
 
-            if (response.ok) {
-                // ✅ Actualizar en tiempo real sin recargar
-                this.actualizarEstadoEnUI(idReporte, nuevoEstado);
-                if (window.adminManager) {
-                    window.adminManager.mostrarNotificacion(`✅ Estado cambiado a "${nuevoEstado}"`, 'success');
-                }
-            } else {
-                alert('Error al cambiar estado');
+        const formData = new FormData();
+        formData.append('action', 'cambiar_estado_reporte');
+        formData.append('id_reporte', idReporte);
+        formData.append('nuevo_estado', nuevoEstado);
+
+        const response = await fetch('admin.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            // ✅ Actualizar en tiempo real sin recargar
+            this.actualizarEstadoEnUI(idReporte, nuevoEstado);
+            if (window.adminManager) {
+                window.adminManager.mostrarNotificacion(`✅ Estado actualizado a "${nuevoEstado}"`, 'success');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión');
+        } else {
+            // Revertir en caso de error
+            if (selectEstado) {
+                selectEstado.value = originalValue;
+            }
+            alert('Error al cambiar estado');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión');
+
+        // Revertir en caso de error
+        const selectEstado = document.querySelector(`select.cambiar-estado[data-id="${idReporte}"]`);
+        if (selectEstado) {
+            selectEstado.value = originalValue;
+        }
+    } finally {
+        // Rehabilitar el select
+        const selectEstado = document.querySelector(`select.cambiar-estado[data-id="${idReporte}"]`);
+        if (selectEstado) {
+            selectEstado.disabled = false;
+            selectEstado.style.opacity = '1';
         }
     }
 };
@@ -878,32 +899,55 @@ AdminManager.eliminarFilaEnUI = function(idReporte) {
 };
 
 AdminManager.cambiarEstadoUsuario = async function(idUsuario, nuevoEstado) {
-    const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
-    if (confirm(`¿${accion.toUpperCase()} al usuario #${idUsuario}?`)) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'cambiar_estado_usuario');
-            formData.append('id_usuario', idUsuario);
-            formData.append('nuevo_estado', nuevoEstado);
+    try {
+        // Mostrar estado de loading en el select
+        const selectEstado = document.querySelector(`select.cambiar-estado-usuario[data-id="${idUsuario}"]`);
+        const originalValue = selectEstado.value;
 
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
+        if (selectEstado) {
+            selectEstado.disabled = true;
+            selectEstado.style.opacity = '0.7';
+        }
 
-            if (response.ok) {
-                // ✅ Actualizar en tiempo real
-                this.actualizarEstadoUsuarioEnUI(idUsuario, nuevoEstado);
-                if (window.adminManager) {
-                    const estadoTexto = nuevoEstado == 1 ? 'activado' : 'desactivado';
-                    window.adminManager.mostrarNotificacion(`✅ Usuario ${estadoTexto} correctamente`, 'success');
-                }
-            } else {
-                alert('Error al cambiar estado del usuario');
+        const formData = new FormData();
+        formData.append('action', 'cambiar_estado_usuario');
+        formData.append('id_usuario', idUsuario);
+        formData.append('nuevo_estado', nuevoEstado);
+
+        const response = await fetch('admin.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            // ✅ Actualizar en tiempo real
+            this.actualizarEstadoUsuarioEnUI(idUsuario, nuevoEstado);
+            if (window.adminManager) {
+                const estadoTexto = nuevoEstado == 1 ? 'activado' : 'desactivado';
+                window.adminManager.mostrarNotificacion(`✅ Usuario ${estadoTexto} correctamente`, 'success');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión');
+        } else {
+            // Revertir en caso de error
+            if (selectEstado) {
+                selectEstado.value = originalValue;
+            }
+            alert('Error al cambiar estado del usuario');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión');
+
+        // Revertir en caso de error
+        const selectEstado = document.querySelector(`select.cambiar-estado-usuario[data-id="${idUsuario}"]`);
+        if (selectEstado) {
+            selectEstado.value = originalValue;
+        }
+    } finally {
+        // Rehabilitar el select
+        const selectEstado = document.querySelector(`select.cambiar-estado-usuario[data-id="${idUsuario}"]`);
+        if (selectEstado) {
+            selectEstado.disabled = false;
+            selectEstado.style.opacity = '1';
         }
     }
 };
