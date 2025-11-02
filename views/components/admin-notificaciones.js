@@ -13,7 +13,6 @@ class NotificationManager {
     initialize() {
         console.log('🔔 Inicializando NotificationManager...');
         this.setupEventListeners();
-        this.setupPanelNotificaciones();
 
         // 🆕 CONEXIÓN DIRECTA SIN TOKEN
         if (document.visibilityState === 'visible' && this.isAdminPage()) {
