@@ -300,42 +300,148 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         gap: 10px;
     }
 
-    /* Estilos para el indicador de foto pendiente */
-    .photo-pending-indicator {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #ffc107;
-        color: #000;
-        padding: 8px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        z-index: 10;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-
-    .pending-indicator-content {
+    /* 🆕 ESTILOS MEJORADOS PARA LA CONFIRMACIÓN DE FOTO */
+    .photo-confirmation-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10001;
         display: flex;
+        justify-content: center;
         align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .btn-confirm-photo,
-    .btn-cancel-photo {
-        background: rgba(0,0,0,0.1);
-        border: 1px solid rgba(0,0,0,0.2);
-        color: #000;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        cursor: pointer;
+        opacity: 0;
+        visibility: hidden;
         transition: all 0.3s ease;
     }
 
-    .btn-confirm-photo:hover,
-    .btn-cancel-photo:hover {
-        background: rgba(0,0,0,0.2);
+    .photo-confirmation-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .photo-confirmation-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 400px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+    }
+
+    .photo-confirmation-modal.active .photo-confirmation-content {
+        transform: translateY(0);
+    }
+
+    .photo-preview-container {
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid #f8f9fa;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .photo-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .confirmation-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+
+    .confirmation-message {
+        color: #6c757d;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+
+    .confirmation-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn-confirm {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-confirm:hover {
+        background: #218838;
+        transform: translateY(-1px);
+    }
+
+    .btn-confirm:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+    }
+
+    /* Indicador sutil de foto pendiente */
+    .photo-pending-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #ffc107;
+        color: #000;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
     }
 
     /* Responsive */
@@ -359,9 +465,18 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
             transform: translateY(-100px);
         }
 
-        .pending-indicator-content {
+        .photo-confirmation-content {
+            margin: 20px;
+            padding: 20px;
+        }
+
+        .confirmation-actions {
             flex-direction: column;
-            gap: 5px;
+        }
+
+        .photo-preview-container {
+            width: 120px;
+            height: 120px;
         }
     }
 </style>
@@ -453,6 +568,10 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                                 <?php endif; ?>
                                 <div class="avatar-edit-btn" id="editAvatarBtn" title="Cambiar foto de perfil">
                                     <i class="fas fa-camera"></i>
+                                </div>
+                                <!-- 🆕 Badge sutil para indicar foto pendiente -->
+                                <div id="photoPendingBadge" class="photo-pending-badge" style="display: none;">
+                                    <i class="fas fa-clock"></i>
                                 </div>
                             </div>
                             <div class="profile-hero-info">
@@ -625,6 +744,31 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         </div>
         <!-- FIN del mainContent -->
 
+        <!-- 🆕 MODAL PROFESIONAL PARA CONFIRMACIÓN DE FOTO -->
+        <div id="photoConfirmationModal" class="photo-confirmation-modal">
+            <div class="photo-confirmation-content">
+                <div class="photo-preview-container">
+                    <img id="confirmationPhotoPreview" class="photo-preview" src="" alt="Vista previa">
+                </div>
+
+                <h3 class="confirmation-title">Confirmar Foto de Perfil</h3>
+                <p class="confirmation-message">
+                    ¿Estás seguro de que quieres usar esta foto como tu nueva imagen de perfil?
+                </p>
+
+                <div class="confirmation-actions">
+                    <button class="btn-cancel" onclick="window.profileManager.cancelarFoto()">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button class="btn-confirm" onclick="window.profileManager.confirmarFoto()">
+                        <i class="fas fa-check"></i>
+                        Sí, Usar Esta Foto
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Navegación inferior -->
         <nav class="bottom-nav visible">
             <div class="nav-item active" data-target="feedView">
@@ -774,7 +918,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         // Variable global con la URL del mapa
         const mapUrl = '<?php echo $mapUrl; ?>';
 
-        // GESTIÓN COMPLETA DEL PERFIL CON SUBIDA INMEDIATA DE FOTO
+        // GESTIÓN COMPLETA DEL PERFIL CON MODAL PROFESIONAL
         class ProfileManager {
             constructor() {
                 this.isEditing = false;
@@ -853,28 +997,48 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 // Guardar el archivo temporalmente
                 this.tempPhotoFile = file;
 
-                // Mostrar preview
+                // Mostrar preview en el modal
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    this.mostrarPreviewFoto(e.target.result);
+                    this.mostrarModalConfirmacion(e.target.result);
                 };
                 reader.readAsDataURL(file);
             }
 
-            mostrarPreviewFoto(imageDataUrl) {
-                const profileAvatar = document.getElementById('profileAvatar');
-                const defaultProfileAvatar = document.getElementById('defaultProfileAvatar');
+            // 🆕 MÉTODO MEJORADO - Mostrar modal profesional
+            mostrarModalConfirmacion(imageDataUrl) {
+                const modal = document.getElementById('photoConfirmationModal');
+                const preview = document.getElementById('confirmationPhotoPreview');
+                const badge = document.getElementById('photoPendingBadge');
 
-                if (profileAvatar) {
-                    profileAvatar.src = imageDataUrl;
-                    profileAvatar.style.display = 'block';
-                }
-                if (defaultProfileAvatar) {
-                    defaultProfileAvatar.style.display = 'none';
+                if (preview) {
+                    preview.src = imageDataUrl;
                 }
 
-                // Mostrar indicador de confirmación
-                this.mostrarIndicadorFotoPendiente();
+                if (badge) {
+                    badge.style.display = 'flex';
+                }
+
+                // Mostrar modal con animación
+                modal.classList.add('active');
+
+                // Bloquear scroll del body
+                document.body.style.overflow = 'hidden';
+            }
+
+            // 🆕 MÉTODO MEJORADO - Ocultar modal
+            ocultarModalConfirmacion() {
+                const modal = document.getElementById('photoConfirmationModal');
+                const badge = document.getElementById('photoPendingBadge');
+
+                modal.classList.remove('active');
+
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+
+                // Restaurar scroll del body
+                document.body.style.overflow = '';
             }
 
             // MÉTODO MODIFICADO - Guarda la foto inmediatamente al confirmar
@@ -886,9 +1050,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                 try {
                     // Mostrar loading en el botón de confirmar
-                    const confirmBtn = document.querySelector('.btn-confirm-photo');
+                    const confirmBtn = document.querySelector('.btn-confirm');
                     if (confirmBtn) {
-                        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
                         confirmBtn.disabled = true;
                     }
 
@@ -912,11 +1076,8 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                             // ACTUALIZAR INMEDIATAMENTE la foto en la UI
                             this.actualizarFotoEnUI(result.foto_perfil);
 
-                            // Quitar el indicador
-                            const indicador = document.querySelector('.photo-pending-indicator');
-                            if (indicador) {
-                                indicador.remove();
-                            }
+                            // Ocultar modal
+                            this.ocultarModalConfirmacion();
 
                             // Limpiar el archivo temporal
                             this.tempPhotoFile = null;
@@ -940,12 +1101,31 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     this.mostrarNotificacion('❌ Error al actualizar foto: ' + error.message, 'error');
 
                     // Restaurar botón de confirmar
-                    const confirmBtn = document.querySelector('.btn-confirm-photo');
+                    const confirmBtn = document.querySelector('.btn-confirm');
                     if (confirmBtn) {
-                        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Sí, Guardar';
+                        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Sí, Usar Esta Foto';
                         confirmBtn.disabled = false;
                     }
                 }
+            }
+
+            cancelarFoto() {
+                // Ocultar modal
+                this.ocultarModalConfirmacion();
+
+                // Restaurar avatar original
+                this.restaurarAvatarOriginal();
+
+                // Limpiar archivo temporal
+                this.tempPhotoFile = null;
+
+                // Limpiar input de archivo
+                const fotoInput = document.getElementById('fotoPerfil');
+                if (fotoInput) {
+                    fotoInput.value = '';
+                }
+
+                this.mostrarNotificacion('❌ Foto cancelada', 'info');
             }
 
             // Método para actualizar la foto en la UI inmediatamente
@@ -971,56 +1151,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                         window.usuarioFotoPerfil = finalUrl;
                         console.log('✅ Avatar actualizado inmediatamente');
                     }
-                }
-            }
-
-            cancelarFoto() {
-                this.tempPhotoFile = null;
-
-                // Quitar indicador
-                const indicador = document.querySelector('.photo-pending-indicator');
-                if (indicador) {
-                    indicador.remove();
-                }
-
-                // Restaurar avatar original
-                this.restaurarAvatarOriginal();
-
-                // Limpiar input de archivo
-                const fotoInput = document.getElementById('fotoPerfil');
-                if (fotoInput) {
-                    fotoInput.value = '';
-                }
-
-                this.mostrarNotificacion('❌ Foto cancelada', 'info');
-            }
-
-            mostrarIndicadorFotoPendiente() {
-                // Remover indicador anterior si existe
-                const indicadorAnterior = document.querySelector('.photo-pending-indicator');
-                if (indicadorAnterior) {
-                    indicadorAnterior.remove();
-                }
-
-                const indicador = document.createElement('div');
-                indicador.className = 'photo-pending-indicator';
-                indicador.innerHTML = `
-                    <div class="pending-indicator-content">
-                        <i class="fas fa-camera"></i>
-                        <span>¿Guardar esta foto?</span>
-                        <button class="btn-confirm-photo" onclick="window.profileManager.confirmarFoto()">
-                            <i class="fas fa-check"></i> Sí, Guardar
-                        </button>
-                        <button class="btn-cancel-photo" onclick="window.profileManager.cancelarFoto()">
-                            <i class="fas fa-times"></i> Cancelar
-                        </button>
-                    </div>
-                `;
-
-                const avatarContainer = document.querySelector('.profile-avatar-container');
-                if (avatarContainer) {
-                    avatarContainer.style.position = 'relative';
-                    avatarContainer.appendChild(indicador);
                 }
             }
 
