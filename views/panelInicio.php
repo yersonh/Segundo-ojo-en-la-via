@@ -1353,7 +1353,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
             }
         }, 500);
     });
-a
     window.addEventListener('beforeunload', function() {
         if (window.SSEManager) {
             window.SSEManager.destruir();
