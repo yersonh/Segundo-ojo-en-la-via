@@ -1,4 +1,4 @@
-// admin.js - Versión completa con actualizaciones en tiempo real
+// admin.js - Versión limpia sin sistema de notificaciones
 class AdminManager {
     constructor() {
         this.map = null;
@@ -683,8 +683,10 @@ class AdminManager {
         .then(response => {
             if (response.ok) {
                 this.cerrarModalAlerta();
-                // ✅ ELIMINADO: location.reload() - Ahora solo muestra mensaje de éxito
-                this.mostrarNotificacion('✅ Alerta enviada correctamente', 'success');
+                // Mostrar mensaje de éxito y recargar
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             } else {
                 alert('Error al enviar la alerta');
             }
@@ -698,232 +700,47 @@ class AdminManager {
             btnEnviar.disabled = false;
         });
     }
-
-    // Método para mostrar notificaciones temporales
-    mostrarNotificacion(mensaje, tipo = 'success') {
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${tipo}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation'}"></i>
-                <span>${mensaje}</span>
-            </div>
-        `;
-
-        // Estilos para la notificación
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${tipo === 'success' ? '#28a745' : '#dc3545'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            transform: translateX(400px);
-            opacity: 0;
-            transition: all 0.3s ease;
-        `;
-
-        document.body.appendChild(notification);
-
-        // Animación de entrada
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-            notification.style.opacity = '1';
-        }, 100);
-
-        // Auto-eliminar después de 3 segundos
-        setTimeout(() => {
-            notification.style.transform = 'translateX(400px)';
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
-
-    // Método para actualizar estado en el mapa
-    actualizarEstadoEnMapa(idReporte, nuevoEstado) {
-        this.markers.forEach(marker => {
-            const popupContent = marker.getPopup().getContent();
-            if (popupContent && popupContent.includes(`#${idReporte}`)) {
-                // Recrear el popup con el nuevo estado
-                // Esto requeriría tener acceso a los datos del reporte
-                // Por simplicidad, podríamos recargar solo los marcadores afectados
-                setTimeout(() => {
-                    this.cargarReportesEnMapa();
-                }, 500);
-            }
-        });
-    }
 }
 
-// Métodos estáticos - MODIFICADOS para ser en tiempo real
-AdminManager.cambiarEstadoReporte = async function(idReporte, nuevoEstado) {
+// Métodos estáticos
+AdminManager.cambiarEstadoReporte = function(idReporte, nuevoEstado) {
     if (confirm(`¿Cambiar estado del reporte #${idReporte} a "${nuevoEstado}"?`)) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'cambiar_estado_reporte');
-            formData.append('id_reporte', idReporte);
-            formData.append('nuevo_estado', nuevoEstado);
-
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                // ✅ Actualizar en tiempo real sin recargar
-                this.actualizarEstadoEnUI(idReporte, nuevoEstado);
-                if (window.adminManager) {
-                    window.adminManager.mostrarNotificacion(`✅ Estado cambiado a "${nuevoEstado}"`, 'success');
-                }
-            } else {
-                alert('Error al cambiar estado');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión');
-        }
+        this.enviarAccion('cambiar_estado_reporte', { id_reporte: idReporte, nuevo_estado: nuevoEstado });
     }
 };
 
-// Método para actualizar el estado en la UI
-AdminManager.actualizarEstadoEnUI = function(idReporte, nuevoEstado) {
-    // Actualizar en la tabla de reportes
-    const selectEstado = document.querySelector(`select.cambiar-estado[data-id="${idReporte}"]`);
-    if (selectEstado) {
-        selectEstado.value = nuevoEstado;
-    }
-
-    // Actualizar badge de estado si existe
-    const badgeEstado = document.querySelector(`.badge-estado[data-id="${idReporte}"]`);
-    if (badgeEstado) {
-        badgeEstado.textContent = nuevoEstado;
-        badgeEstado.className = `badge-estado badge-${nuevoEstado.toLowerCase().replace(' ', '-')}`;
-
-        // Actualizar clases CSS para el nuevo estado
-        const statusColors = {
-            'Pendiente': 'badge-warning',
-            'En Proceso': 'badge-info',
-            'Resuelto': 'badge-success',
-            'Verificado': 'badge-primary'
-        };
-
-        // Remover clases anteriores y agregar nueva
-        badgeEstado.classList.remove('badge-warning', 'badge-info', 'badge-success', 'badge-primary');
-        badgeEstado.classList.add(statusColors[nuevoEstado] || 'badge-secondary');
-    }
-
-    // Si estamos en el mapa, actualizar también los popups
-    if (window.adminManager && window.adminManager.map) {
-        window.adminManager.actualizarEstadoEnMapa(idReporte, nuevoEstado);
-    }
-};
-
-AdminManager.eliminarReporte = async function(idReporte) {
+AdminManager.eliminarReporte = function(idReporte) {
     if (confirm(`¿Estás seguro de eliminar el reporte #${idReporte}?`)) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'eliminar_reporte');
-            formData.append('id_reporte', idReporte);
-
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                // ✅ Eliminar fila en tiempo real
-                this.eliminarFilaEnUI(idReporte);
-                if (window.adminManager) {
-                    window.adminManager.mostrarNotificacion('✅ Reporte eliminado correctamente', 'success');
-                }
-
-                // Actualizar mapa si está visible
-                if (window.adminManager && window.adminManager.mapInitialized) {
-                    setTimeout(() => {
-                        window.adminManager.cargarReportesEnMapa();
-                    }, 500);
-                }
-            } else {
-                alert('Error al eliminar reporte');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión');
-        }
+        this.enviarAccion('eliminar_reporte', { id_reporte: idReporte });
     }
 };
 
-// Método para eliminar fila en la UI
-AdminManager.eliminarFilaEnUI = function(idReporte) {
-    const fila = document.querySelector(`tr[data-id="${idReporte}"]`) ||
-                 document.querySelector(`tr:has(select[data-id="${idReporte}"])`);
-
-    if (fila) {
-        fila.style.opacity = '0.5';
-        fila.style.transition = 'opacity 0.3s ease';
-
-        setTimeout(() => {
-            if (fila.parentNode) {
-                fila.parentNode.removeChild(fila);
-            }
-        }, 300);
-    }
-};
-
-AdminManager.cambiarEstadoUsuario = async function(idUsuario, nuevoEstado) {
+AdminManager.cambiarEstadoUsuario = function(idUsuario, nuevoEstado) {
     const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
     if (confirm(`¿${accion.toUpperCase()} al usuario #${idUsuario}?`)) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'cambiar_estado_usuario');
-            formData.append('id_usuario', idUsuario);
-            formData.append('nuevo_estado', nuevoEstado);
-
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                // ✅ Actualizar en tiempo real
-                this.actualizarEstadoUsuarioEnUI(idUsuario, nuevoEstado);
-                if (window.adminManager) {
-                    const estadoTexto = nuevoEstado == 1 ? 'activado' : 'desactivado';
-                    window.adminManager.mostrarNotificacion(`✅ Usuario ${estadoTexto} correctamente`, 'success');
-                }
-            } else {
-                alert('Error al cambiar estado del usuario');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión');
-        }
+        this.enviarAccion('cambiar_estado_usuario', { id_usuario: idUsuario, nuevo_estado: nuevoEstado });
     }
 };
 
-// Método para actualizar estado de usuario en la UI
-AdminManager.actualizarEstadoUsuarioEnUI = function(idUsuario, nuevoEstado) {
-    const selectEstado = document.querySelector(`select.cambiar-estado-usuario[data-id="${idUsuario}"]`);
-    if (selectEstado) {
-        selectEstado.value = nuevoEstado;
+AdminManager.enviarAccion = function(accion, datos) {
+    const formData = new FormData();
+    formData.append('action', accion);
+    for (const [key, value] of Object.entries(datos)) {
+        formData.append(key, value);
     }
 
-    // Actualizar badge de estado del usuario si existe
-    const badgeEstado = document.querySelector(`.badge-estado-usuario[data-id="${idUsuario}"]`);
-    if (badgeEstado) {
-        const estadoTexto = nuevoEstado == 1 ? 'Activo' : 'Inactivo';
-        const estadoClase = nuevoEstado == 1 ? 'badge-success' : 'badge-danger';
-
-        badgeEstado.textContent = estadoTexto;
-        badgeEstado.className = `badge-estado-usuario ${estadoClase}`;
-    }
+    fetch('admin.php', { method: 'POST', body: formData })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error al procesar la solicitud');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        });
 };
 
 // Inicialización
