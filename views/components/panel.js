@@ -264,7 +264,7 @@
 
                     if (!data.sesion_activa) {
                         console.warn('⚠️ Sesión no activa, redirigiendo...');
-                        window.location.href = '../index.php';
+                        window.location.href = '../../index.php';
                         return false;
                     }
 
@@ -337,7 +337,7 @@
                 }
 
                 try {
-                    const resp = await fetch('../controllers/reportecontrolador.php?action=listar', {
+                    const resp = await fetch('../../controllers/reportecontrolador.php?action=listar', {
                         credentials: 'include'
                     });
 
@@ -634,7 +634,7 @@ async function marcarTodasLeidas() {
             // Función para cargar likes de un post
             async function cargarLikesPost(id_reporte, postElement) {
                 try {
-                    const resp = await fetch(`../controllers/reportecontrolador.php?action=contar_likes&id_reporte=${id_reporte}`, {
+                    const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_likes&id_reporte=${id_reporte}`, {
                         credentials: 'include'
                     });
                     const data = await resp.json();
@@ -676,7 +676,7 @@ async function marcarTodasLeidas() {
                     formData.append('id_reporte', id_reporte);
                     formData.append('id_usuario', id_usuario);
 
-                    const resp = await fetch('../controllers/reportecontrolador.php?action=verificar_like', {
+                    const resp = await fetch('../../controllers/reportecontrolador.php?action=verificar_like', {
                         method: 'POST',
                         body: formData,
                         credentials: 'include'
@@ -701,7 +701,7 @@ async function marcarTodasLeidas() {
         formData.append('id_reporte', id_reporte);
         formData.append('id_usuario', id_usuario);
 
-        const resp = await fetch('../controllers/reportecontrolador.php?action=toggle_like', {
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=toggle_like', {
             method: 'POST',
             body: formData,
             credentials: 'include'
@@ -737,7 +737,7 @@ async function marcarTodasLeidas() {
 async function notificarLike(id_reporte, id_usuario_origen) {
     try {
         // Obtener el dueño del reporte
-        const resp = await fetch(`../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
         const data = await resp.json();
 
         if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
@@ -746,7 +746,7 @@ async function notificarLike(id_reporte, id_usuario_origen) {
             formData.append('id_usuario_origen', id_usuario_origen);
             formData.append('id_usuario_destino', data.id_usuario_destino);
 
-            await fetch('../controllers/notificacion_controlador.php?action=notificar_like', {
+            await fetch('../../controllers/notificacion_controlador.php?action=notificar_like', {
                 method: 'POST',
                 body: formData
             });
@@ -906,7 +906,7 @@ async function notificarLike(id_reporte, id_usuario_origen) {
                 try {
                     const form = new FormData();
                     form.append('id_notificacion', id);
-                    const resp = await fetch('../controllers/notificacion_controlador.php?action=marcar_leida', {
+                    const resp = await fetch('../../controllers/notificacion_controlador.php?action=marcar_leida', {
                         method: 'POST',
                         body: form,
                         credentials: 'include'
@@ -970,7 +970,7 @@ async function notificarLike(id_reporte, id_usuario_origen) {
             // Función para cerrar sesión (solo cuando el usuario lo solicita)
             function cerrarSesion() {
                 if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                    window.location.href = '../logout.php';
+                    window.location.href = '../../logout.php';
                 }
             }
 
