@@ -1,5 +1,5 @@
 <?php
-// controllers/sse_notificaciones.php - VERSIÓN CON LOGGING
+// controllers/sse_notificaciones.php - VERSIÓN UNIFICADA
 
 // HEADERS PRIMERO - Sin output antes
 header('Content-Type: text/event-stream; charset=utf-8');
@@ -16,60 +16,50 @@ while (ob_get_level() > 0) ob_end_clean();
 ini_set('output_buffering', 'off');
 ini_set('zlib.output_compression', false);
 
-// Verificar token de autenticación
-$token = $_GET['token'] ?? '';
-if (!$token) {
-    sendSSE(['error' => 'Token de autenticación requerido'], 'error');
-    exit();
-}
-
-// Validar token usando tu estructura existente
+// Verificar autenticación
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/session_manager.php';
+require_once __DIR__ . '/../config/bootstrap_session.php';
 
-try {
-    $usuario = SessionManager::validateSSEToken($token);
-
-    if (!$usuario || $usuario['id_rol'] != 1) {
-        sendSSE(['error' => 'No autorizado o token expirado'], 'error');
-        exit();
-    }
-
-    $id_usuario = $usuario['id_usuario'];
-
-} catch (Exception $e) {
-    sendSSE(['error' => 'Error de autenticación: ' . $e->getMessage()], 'error');
+// Verificar que el usuario esté autenticado
+if (!isset($_SESSION['usuario_id'])) {
+    sendSSE(['error' => 'Usuario no autenticado'], 'error');
     exit();
 }
+
+$id_usuario = $_SESSION['usuario_id'];
+$rol_usuario = $_SESSION['rol'] ?? null;
 
 // Función para enviar eventos
 function sendSSE($data, $event = 'message') {
     echo "event: $event\n";
-    echo "data: " . json_encode($data) . "\n\n";
+    echo "data: " . json_encode($data, JSON_UNESCAPED_UNICODE) . "\n\n";
     @ob_flush();
     @flush();
 }
 
-// Configuración para producción
-$archivoNotificacion = __DIR__ . '/../temp/ultima_notificacion.json';
+// Configuración
 $max_execution_time = 55; // Railway cierra en 60s
 $start_time = time();
 
-// 🆕 LOGGING INICIAL
-error_log("🚀 SSE INICIADO - Archivo: " . $archivoNotificacion);
-error_log("📁 Existe archivo: " . (file_exists($archivoNotificacion) ? 'SÍ' : 'NO'));
-
-if (file_exists($archivoNotificacion)) {
-    error_log("📁 Permisos archivo: " . substr(sprintf('%o', fileperms($archivoNotificacion)), -4));
-    error_log("📁 Legible: " . (is_readable($archivoNotificacion) ? 'SÍ' : 'NO'));
-    error_log("📁 Contenido tamaño: " . filesize($archivoNotificacion));
-}
+// Archivo para notificaciones de admin (reportes nuevos)
+$archivoNotificacionAdmin = __DIR__ . '/../temp/ultima_notificacion.json';
 
 try {
+    // Conectar a la base de datos
+    $database = new Database();
+    $db = $database->conectar();
+
     // Ping inicial
-    sendSSE(['type' => 'connected', 'timestamp' => time(), 'user_id' => $id_usuario], 'ping');
+    sendSSE([
+        'type' => 'connected',
+        'timestamp' => time(),
+        'user_id' => $id_usuario,
+        'user_role' => $rol_usuario
+    ], 'ping');
 
     $lastCheck = time();
+    $lastNotificationCheck = time();
+    $lastAdminCheck = time();
     $iteration = 0;
 
     while (true) {
@@ -77,83 +67,95 @@ try {
 
         // Verificar timeout
         if ((time() - $start_time) >= $max_execution_time) {
-            error_log("⏰ SSE Timeout después de " . (time() - $start_time) . " segundos");
             sendSSE(['type' => 'timeout', 'message' => 'Reconectando...'], 'ping');
             break;
         }
 
         // Verificar si el cliente se desconectó
         if (connection_aborted()) {
-            error_log("📞 Cliente desconectado");
             break;
         }
 
-        // Verificar nuevas notificaciones cada 2 segundos
-        if ((time() - $lastCheck) >= 2) {
-            error_log("🔄 Iteración $iteration - Verificando notificaciones...");
+        // =============================================
+        // 1. NOTIFICACIONES PARA USUARIOS NORMALES (likes, comentarios, etc.)
+        // =============================================
+        if ((time() - $lastNotificationCheck) >= 3) {
+            try {
+                // Verificar notificaciones en base de datos para este usuario
+                $sql = "SELECT COUNT(*) as total
+                        FROM notificacion
+                        WHERE id_usuario_destino = ?
+                        AND leida = FALSE
+                        AND fecha > FROM_UNIXTIME(?)";
 
-            if (file_exists($archivoNotificacion)) {
-                error_log("📖 Archivo de notificación ENCONTRADO");
-                error_log("📖 Tamaño: " . filesize($archivoNotificacion) . " bytes");
-                error_log("📖 Legible: " . (is_readable($archivoNotificacion) ? 'SÍ' : 'NO'));
+                $stmt = $db->prepare($sql);
+                $stmt->execute([$id_usuario, $lastNotificationCheck]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                if (!is_readable($archivoNotificacion)) {
-                    error_log("❌ ERROR: Archivo no es legible para PHP");
-                    $lastCheck = time();
-                    sleep(1);
-                    continue;
+                if ($result && $result['total'] > 0) {
+                    // Enviar evento de nuevas notificaciones
+                    sendSSE([
+                        'type' => 'nuevas_notificaciones',
+                        'total' => (int)$result['total'],
+                        'timestamp' => time(),
+                        'for_user' => true
+                    ], 'notificacion');
+
+                    error_log("🔔 SSE Usuario: {$result['total']} nuevas notificaciones para usuario $id_usuario");
                 }
 
-                $content = file_get_contents($archivoNotificacion);
-                error_log("📄 Contenido crudo: " . $content);
-
-                $data = json_decode($content, true);
-
-                if ($data && is_array($data)) {
-                    error_log("✅ JSON parseado correctamente");
-                    error_log("📊 Datos: " . print_r($data, true));
-
-                    if (isset($data['timestamp'])) {
-                        error_log("⏰ Timestamp archivo: " . $data['timestamp'] . " vs último check: " . $lastCheck);
-
-                        // Solo enviar si es más reciente que nuestra última verificación
-                        if ($data['timestamp'] > $lastCheck) {
-                            error_log("🚀 ENVIANDO NOTIFICACIÓN SSE - Reporte #" . ($data['id_reporte'] ?? 'unknown'));
-                            sendSSE($data, 'nuevo_reporte');
-                            $lastCheck = $data['timestamp'];
-
-                            // Pequeño delay para evitar race conditions, luego eliminar
-                            usleep(500000); // 0.5 segundos
-
-                            if (@unlink($archivoNotificacion)) {
-                                error_log("🗑️ Archivo de notificación eliminado");
-                            } else {
-                                error_log("❌ Error eliminando archivo de notificación");
-                                $error = error_get_last();
-                                error_log("📝 Error details: " . ($error['message'] ?? 'Unknown'));
-                            }
-                        } else {
-                            error_log("ℹ️ Notificación antigua - ignorando");
-                        }
-                    } else {
-                        error_log("❌ JSON no tiene timestamp");
-                    }
-                } else {
-                    error_log("❌ Error parseando JSON: " . json_last_error_msg());
-                    // Intentar eliminar archivo corrupto
-                    @unlink($archivoNotificacion);
-                }
-            } else {
-                error_log("📭 No hay archivo de notificación");
+            } catch (Exception $e) {
+                error_log("❌ Error verificando notificaciones usuario: " . $e->getMessage());
             }
 
-            $lastCheck = time();
+            $lastNotificationCheck = time();
         }
 
-        // Enviar ping cada 25 segundos para mantener conexión
-        if ((time() % 25) == 0) {
-            error_log("📡 Enviando ping de mantenimiento");
-            sendSSE(['type' => 'ping', 'timestamp' => time()], 'ping');
+        // =============================================
+        // 2. NOTIFICACIONES PARA ADMIN (nuevos reportes)
+        // =============================================
+        if ($rol_usuario == 1 && (time() - $lastAdminCheck) >= 2) {
+            try {
+                if (file_exists($archivoNotificacionAdmin) && is_readable($archivoNotificacionAdmin)) {
+                    $content = file_get_contents($archivoNotificacionAdmin);
+                    $data = json_decode($content, true);
+
+                    if ($data && is_array($data) && isset($data['timestamp'])) {
+                        // Solo enviar si es más reciente que nuestra última verificación
+                        if ($data['timestamp'] > $lastAdminCheck) {
+                            error_log("🚀 SSE Admin: Enviando notificación de reporte #" . ($data['id_reporte'] ?? 'unknown'));
+
+                            sendSSE($data, 'nuevo_reporte');
+                            $lastAdminCheck = $data['timestamp'];
+
+                            // Pequeño delay y eliminar archivo
+                            usleep(500000);
+                            @unlink($archivoNotificacionAdmin);
+                        }
+                    } else {
+                        // Archivo corrupto, eliminar
+                        @unlink($archivoNotificacionAdmin);
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("❌ Error verificando notificaciones admin: " . $e->getMessage());
+            }
+        }
+
+        // =============================================
+        // 3. NOTIFICACIONES GLOBALES (para todos los usuarios)
+        // =============================================
+        // Aquí puedes agregar notificaciones que deben llegar a todos los usuarios
+        // Por ejemplo: anuncios del sistema, mantenimiento, etc.
+
+        // Enviar ping cada 15 segundos para mantener conexión
+        if ((time() - $lastCheck) >= 15) {
+            sendSSE([
+                'type' => 'ping',
+                'timestamp' => time(),
+                'user_role' => $rol_usuario
+            ], 'ping');
+            $lastCheck = time();
         }
 
         sleep(1); // Esperar 1 segundo entre iteraciones
@@ -164,7 +166,5 @@ try {
     sendSSE(['error' => $e->getMessage()], 'error');
 }
 
-// Limpiar token al desconectar
-SessionManager::invalidateToken($token);
-error_log("🔚 SSE finalizado");
+error_log("🔚 SSE finalizado para usuario $id_usuario (rol: $rol_usuario)");
 ?>

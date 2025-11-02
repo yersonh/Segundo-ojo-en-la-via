@@ -709,6 +709,23 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
     <script type="module" src="components/mapa/index.js"></script>
     <script type="module" src="components/formulario/index.js"></script>
     <script src="components/comentarios.js"></script>
+    <script src="components/sse-notificaciones.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            if (window.SSEManager) {
+                window.SSEManager.inicializar();
+                console.log('✅ SSE Manager unificado inicializado');
+            }
+        }, 500);
+    });
+
+    window.addEventListener('beforeunload', function() {
+        if (window.SSEManager) {
+            window.SSEManager.destruir();
+        }
+    });
+</script>
     <script>
     // Detectar modo claro/oscuro del sistema y aplicar estilos
     function aplicarModoColor() {
