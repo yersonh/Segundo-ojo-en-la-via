@@ -1,7 +1,7 @@
 <?php
 // controllers/perfilcontrolador.php - ACTUALIZADO para manejar foto separadamente
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/sessions.php';
+require_once __DIR__ . '/../config/bootstrap_session.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
