@@ -80,13 +80,15 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         window.usuarioApellidos = <?php echo json_encode($usuario_apellidos ?? ''); ?>;
         window.usuarioCorreo = <?php echo json_encode($usuario_correo); ?>;
         window.usuarioTelefono = <?php echo json_encode($usuario_telefono ?? ''); ?>;
+        window.usuarioFotoPerfil = <?php echo json_encode($foto_perfil ?? ''); ?>;
 
         console.log('👤 Usuario cargado:', {
             id: window.usuarioId,
             nombres: window.usuarioNombres,
             apellidos: window.usuarioApellidos,
             correo: window.usuarioCorreo,
-            telefono: window.usuarioTelefono
+            telefono: window.usuarioTelefono,
+            foto_perfil: window.usuarioFotoPerfil
         });
     </script>
 
@@ -265,6 +267,74 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         cursor: not-allowed;
     }
 
+    /* Estilos para la foto de perfil en el header */
+    .header-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .header-user-info:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .header-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .header-user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header-user-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: white;
+        line-height: 1.2;
+    }
+
+    .header-user-role {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.2;
+    }
+
+    /* Avatar por defecto cuando no hay foto */
+    .default-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Responsive para el header */
+    @media (max-width: 768px) {
+        .header-user-details {
+            display: none;
+        }
+
+        .header-user-info {
+            padding: 8px;
+        }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .comentarios-modal {
@@ -284,15 +354,32 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 </head>
 <body>
     <div class="app">
-        <!-- Header mejorado -->
+        <!-- Header mejorado con foto de perfil -->
         <header class="app-header">
             <div class="logo">
                 <i class="fas fa-eye"></i>
                 <span>Ojo en la Vía</span>
             </div>
             <div class="user-menu">
-                <!--<img id="headerAvatar" class="user-avatar" src="/imagenes/fiveicon.png" alt="Avatar"
-                    onclick="document.querySelector('.nav-item[data-target=\"profileView\"]').click()"> -->
+                <div class="header-user-info" onclick="document.querySelector('.nav-item[data-target=\"profileView\"]').click()">
+                    <?php if (!empty($foto_perfil)): ?>
+                        <img src="<?php echo htmlspecialchars($foto_perfil); ?>"
+                             alt="Foto de perfil"
+                             class="header-avatar"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="default-avatar" style="display: none;">
+                            <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="default-avatar">
+                            <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="header-user-details">
+                        <div class="header-user-name"><?php echo htmlspecialchars($usuario_nombres . ' ' . ($usuario_apellidos ?? '')); ?></div>
+                        <div class="header-user-role">Usuario</div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -353,10 +440,22 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     <div class="profile-hero">
                         <div class="profile-hero-content">
                             <div class="profile-avatar-container">
-                                <!--<img id="profileAvatar" class="profile-main-avatar" src="/imagenes/fiveicon.png" alt="Avatar del usuario">-->
-                              <!--  <div class="avatar-edit-btn" id="editAvatarBtn" title="Cambiar foto de perfil">
+                                <?php if (!empty($foto_perfil)): ?>
+                                    <img id="profileAvatar" class="profile-main-avatar"
+                                         src="<?php echo htmlspecialchars($foto_perfil); ?>"
+                                         alt="Avatar del usuario"
+                                         onerror="this.style.display='none'; document.getElementById('defaultProfileAvatar').style.display='flex';">
+                                    <div id="defaultProfileAvatar" class="profile-default-avatar" style="display: none;">
+                                        <?php echo strtoupper(substr($usuario_nombres, 0, 1) . substr($usuario_apellidos ?? '', 0, 1)); ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div id="defaultProfileAvatar" class="profile-default-avatar">
+                                        <?php echo strtoupper(substr($usuario_nombres, 0, 1) . substr($usuario_apellidos ?? '', 0, 1)); ?>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="avatar-edit-btn" id="editAvatarBtn" title="Cambiar foto de perfil">
                                     <i class="fas fa-camera"></i>
-                                </div>-->
+                                </div>
                             </div>
                             <div class="profile-hero-info">
                                 <h1 id="profileName"><?php echo htmlspecialchars($usuario_nombres . ' ' . ($usuario_apellidos ?? '')); ?></h1>
@@ -713,6 +812,14 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     btnSaveProfile.addEventListener('click', () => {
                         alert('Funcionalidad de guardar aún no implementada');
                         this.toggleEditMode();
+                    });
+                }
+
+                // Botón para cambiar avatar
+                const editAvatarBtn = document.getElementById('editAvatarBtn');
+                if (editAvatarBtn) {
+                    editAvatarBtn.addEventListener('click', () => {
+                        alert('Funcionalidad para cambiar foto de perfil aún no implementada');
                     });
                 }
             }
