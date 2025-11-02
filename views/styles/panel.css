@@ -2635,3 +2635,38 @@ body, html {
         right: 20px;
     }
 }
+/*notificaciones*/
+/* Estilos para notificaciones */
+.notification {
+    background: var(--card-bg, white);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.notification.no-leida {
+    border-left: 4px solid var(--primary, #3498db);
+    background: var(--notification-unread-bg, #f8f9fa);
+}
+
+.notification.leida {
+    opacity: 0.7;
+}
+
+.notification:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.no-notifications {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted, #6c757d);
+}
+
+.notification.error {
+    border-left-color: var(--danger, #e74c3c);
+    background: var(--error-bg, #fdf2f2);
+}

@@ -315,7 +315,167 @@ try {
 
             echo json_encode(["total_no_leidas" => $result['total']]);
             break;
+// Agrega estos casos en el switch de notificacion_controlador.php
 
+case 'notificar_like':
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id_reporte = $_POST['id_reporte'] ?? null;
+        $id_usuario_origen = $_POST['id_usuario_origen'] ?? null; // Quien dio like
+        $id_usuario_destino = $_POST['id_usuario_destino'] ?? null; // Dueño del reporte
+
+        if ($id_reporte && $id_usuario_origen && $id_usuario_destino) {
+            try {
+                // Obtener información del reporte
+                $sqlReporte = "SELECT descripcion FROM reporte WHERE id_reporte = ?";
+                $stmtReporte = $db->prepare($sqlReporte);
+                $stmtReporte->execute([$id_reporte]);
+                $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
+
+                // Obtener nombre del usuario que dio like
+                $sqlUsuario = "SELECT p.nombres, p.apellidos
+                              FROM usuario u
+                              INNER JOIN persona p ON u.id_persona = p.id_persona
+                              WHERE u.id_usuario = ?";
+                $stmtUsuario = $db->prepare($sqlUsuario);
+                $stmtUsuario->execute([$id_usuario_origen]);
+                $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+
+                $nombre_usuario = $usuario ? trim($usuario['nombres'] . ' ' . $usuario['apellidos']) : 'Alguien';
+                $descripcion_corta = $reporte ? substr($reporte['descripcion'], 0, 50) . '...' : 'tu reporte';
+
+                $mensaje = "👍 {$nombre_usuario} le dio like a tu reporte: \"{$descripcion_corta}\"";
+
+                $sqlInsert = "INSERT INTO notificacion
+                            (id_usuario_destino, id_usuario_origen, id_reporte, tipo, mensaje)
+                            VALUES (?, ?, ?, 'like', ?)";
+                $stmtInsert = $db->prepare($sqlInsert);
+                $stmtInsert->execute([$id_usuario_destino, $id_usuario_origen, $id_reporte, $mensaje]);
+
+                echo json_encode(['success' => true, 'mensaje' => 'Notificación de like creada']);
+
+            } catch (Exception $e) {
+                error_log("Error notificando like: " . $e->getMessage());
+                echo json_encode(['success' => false, 'error' => 'Error creando notificación']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+        }
+    }
+    break;
+
+    case 'notificar_comentario':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id_reporte = $_POST['id_reporte'] ?? null;
+            $id_usuario_origen = $_POST['id_usuario_origen'] ?? null; // Quien comentó
+            $id_usuario_destino = $_POST['id_usuario_destino'] ?? null; // Dueño del reporte
+
+            if ($id_reporte && $id_usuario_origen && $id_usuario_destino) {
+                try {
+                    // Obtener información del reporte
+                    $sqlReporte = "SELECT descripcion FROM reporte WHERE id_reporte = ?";
+                    $stmtReporte = $db->prepare($sqlReporte);
+                    $stmtReporte->execute([$id_reporte]);
+                    $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
+
+                    // Obtener nombre del usuario que comentó
+                    $sqlUsuario = "SELECT p.nombres, p.apellidos
+                                FROM usuario u
+                                INNER JOIN persona p ON u.id_persona = p.id_persona
+                                WHERE u.id_usuario = ?";
+                    $stmtUsuario = $db->prepare($sqlUsuario);
+                    $stmtUsuario->execute([$id_usuario_origen]);
+                    $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+
+                    $nombre_usuario = $usuario ? trim($usuario['nombres'] . ' ' . $usuario['apellidos']) : 'Alguien';
+                    $descripcion_corta = $reporte ? substr($reporte['descripcion'], 0, 50) . '...' : 'tu reporte';
+
+                    $mensaje = "💬 {$nombre_usuario} comentó en tu reporte: \"{$descripcion_corta}\"";
+
+                    $sqlInsert = "INSERT INTO notificacion
+                                (id_usuario_destino, id_usuario_origen, id_reporte, tipo, mensaje)
+                                VALUES (?, ?, ?, 'comentario', ?)";
+                    $stmtInsert = $db->prepare($sqlInsert);
+                    $stmtInsert->execute([$id_usuario_destino, $id_usuario_origen, $id_reporte, $mensaje]);
+
+                    echo json_encode(['success' => true, 'mensaje' => 'Notificación de comentario creada']);
+
+                } catch (Exception $e) {
+                    error_log("Error notificando comentario: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'error' => 'Error creando notificación']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+            }
+        }
+        break;
+
+    case 'notificar_nuevo_reporte_usuario':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id_reporte = $_POST['id_reporte'] ?? null;
+            $id_usuario_origen = $_POST['id_usuario_origen'] ?? null; // Quien creó el reporte
+
+            if ($id_reporte && $id_usuario_origen) {
+                try {
+                    // Obtener información del reporte
+                    $sqlReporte = "SELECT r.descripcion, ti.nombre as tipo_incidente
+                                FROM reporte r
+                                INNER JOIN tipo_incidente ti ON r.id_tipo_incidente = ti.id_tipo_incidente
+                                WHERE r.id_reporte = ?";
+                    $stmtReporte = $db->prepare($sqlReporte);
+                    $stmtReporte->execute([$id_reporte]);
+                    $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
+
+                    // Obtener nombre del usuario que creó el reporte
+                    $sqlUsuario = "SELECT p.nombres, p.apellidos
+                                FROM usuario u
+                                INNER JOIN persona p ON u.id_persona = p.id_persona
+                                WHERE u.id_usuario = ?";
+                    $stmtUsuario = $db->prepare($sqlUsuario);
+                    $stmtUsuario->execute([$id_usuario_origen]);
+                    $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+
+                    $nombre_usuario = $usuario ? trim($usuario['nombres'] . ' ' . $usuario['apellidos']) : 'Un usuario';
+                    $tipo_incidente = $reporte['tipo_incidente'] ?? 'incidente';
+                    $descripcion_corta = $reporte ? substr($reporte['descripcion'], 0, 50) . '...' : 'nuevo reporte';
+
+                    $mensaje = "📢 {$nombre_usuario} reportó un {$tipo_incidente}: \"{$descripcion_corta}\"";
+
+                    // Notificar a todos los usuarios activos (excepto al que creó el reporte)
+                    $sqlUsuarios = "SELECT id_usuario FROM usuario WHERE id_estado = 1 AND id_usuario != ?";
+                    $stmtUsuarios = $db->prepare($sqlUsuarios);
+                    $stmtUsuarios->execute([$id_usuario_origen]);
+                    $usuarios = $stmtUsuarios->fetchAll(PDO::FETCH_ASSOC);
+
+                    $notificaciones_creadas = 0;
+
+                    foreach ($usuarios as $usuario_destino) {
+                        $sqlInsert = "INSERT INTO notificacion
+                                    (id_usuario_destino, id_usuario_origen, id_reporte, tipo, mensaje)
+                                    VALUES (?, ?, ?, 'nuevo_reporte_usuario', ?)";
+                        $stmtInsert = $db->prepare($sqlInsert);
+                        $stmtInsert->execute([
+                            $usuario_destino['id_usuario'],
+                            $id_usuario_origen,
+                            $id_reporte,
+                            $mensaje
+                        ]);
+                        $notificaciones_creadas++;
+                    }
+
+                    echo json_encode([
+                        'success' => true,
+                        'mensaje' => "{$notificaciones_creadas} notificaciones creadas para usuarios"
+                    ]);
+
+                } catch (Exception $e) {
+                    error_log("Error notificando nuevo reporte: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'error' => 'Error creando notificaciones']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+            }
+        }
+        break;
         default:
             echo json_encode(['success' => false, 'error' => 'Acción no válida']);
     }

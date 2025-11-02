@@ -108,67 +108,88 @@ const ComentariosManager = {
     },
 
     async agregarComentario(e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        // 🆕 Prevenir envíos múltiples
-        if (this.enviando) {
-            console.log('⚠️ Ya se está enviando un comentario');
-            return;
+    if (this.enviando) {
+        console.log('⚠️ Ya se está enviando un comentario');
+        return;
+    }
+
+    this.enviando = true;
+
+    const formData = new FormData(e.target);
+    const btnComentario = document.getElementById('btnComentario');
+    const textoComentario = document.getElementById('textoComentario');
+    const id_reporte = formData.get('id_reporte');
+    const id_usuario = window.usuarioId;
+
+    if (!btnComentario || !textoComentario) {
+        console.error('❌ Elementos del formulario no encontrados');
+        this.enviando = false;
+        return;
+    }
+
+    formData.append('id_usuario', id_usuario);
+
+    btnComentario.disabled = true;
+    btnComentario.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
+
+    try {
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=agregar_comentario', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await resp.json();
+
+        if (result.success) {
+            textoComentario.value = '';
+            this.actualizarContadorCaracteres.call(textoComentario);
+
+            // Recargar comentarios silenciosamente
+            await this.cargarComentarios(id_reporte);
+
+            console.log('✅ Comentario agregado correctamente');
+
+            // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
+            await this.notificarComentario(id_reporte, id_usuario);
+
+            // Actualizar contador en el post
+            this.actualizarContadorEnPost(id_reporte);
+
+        } else {
+            console.error('Error al agregar comentario:', result.mensaje || result.error);
         }
+    } catch (error) {
+        console.error('Error de conexión:', error);
+    } finally {
+        btnComentario.disabled = false;
+        btnComentario.innerHTML = '<i class="fas fa-paper-plane"></i> Publicar Comentario';
+        this.enviando = false;
+    }
+},
+// ✅ FUNCIÓN PARA NOTIFICAR COMENTARIO
+async notificarComentario(id_reporte, id_usuario_origen) {
+    try {
+        // Obtener el dueño del reporte
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
+        const data = await resp.json();
 
-        this.enviando = true;
+        if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
+            const formData = new FormData();
+            formData.append('id_reporte', id_reporte);
+            formData.append('id_usuario_origen', id_usuario_origen);
+            formData.append('id_usuario_destino', data.id_usuario_destino);
 
-        const formData = new FormData(e.target);
-        const btnComentario = document.getElementById('btnComentario');
-        const textoComentario = document.getElementById('textoComentario');
-
-        if (!btnComentario || !textoComentario) {
-            console.error('❌ Elementos del formulario no encontrados');
-            this.enviando = false;
-            return;
-        }
-
-        // Obtener ID de usuario desde la variable global
-        const idUsuario = window.usuarioId;
-        if (!idUsuario) {
-            alert('Error: No se pudo identificar al usuario');
-            this.enviando = false;
-            return;
-        }
-
-        formData.append('id_usuario', idUsuario);
-
-        btnComentario.disabled = true;
-        btnComentario.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
-
-        try {
-            const resp = await fetch('../../controllers/reportecontrolador.php?action=agregar_comentario', {
+            await fetch('../../controllers/notificacion_controlador.php?action=notificar_comentario', {
                 method: 'POST',
                 body: formData
             });
-
-            const result = await resp.json();
-
-            if (result.success) {
-                textoComentario.value = '';
-                this.actualizarContadorCaracteres.call(textoComentario);
-
-                // Recargar comentarios silenciosamente
-                const idReporte = formData.get('id_reporte');
-                await this.cargarComentarios(idReporte);
-
-                console.log('✅ Comentario agregado correctamente');
-            } else {
-                console.error('Error al agregar comentario:', result.mensaje || result.error);
-            }
-        } catch (error) {
-            console.error('Error de conexión:', error);
-        } finally {
-            btnComentario.disabled = false;
-            btnComentario.innerHTML = '<i class="fas fa-paper-plane"></i> Publicar Comentario';
-            this.enviando = false;
         }
-    },
+    } catch (error) {
+        console.error('Error notificando comentario:', error);
+    }
+},
 
     abrirComentarios(id_reporte) {
         const comentarioIdReporte = document.getElementById('comentarioIdReporte');

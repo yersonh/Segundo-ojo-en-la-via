@@ -413,56 +413,96 @@
 
             // Versiones seguras de otras funciones
             async function cargarNotificacionesSuave() {
-                const notificationsView = document.getElementById('notificationsView');
-                if (!notificationsView) return;
+    const notificationsView = document.getElementById('notificationsView');
+    if (!notificationsView) return;
 
-                notificationsView.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Cargando notificaciones...</p></div>';
+    notificationsView.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Cargando notificaciones...</p></div>';
 
-                try {
-                    const resp = await fetch('../controllers/notificacion_controlador.php?action=listar', {
-                        credentials: 'include'
-                    });
+    try {
+        const resp = await fetch('../../controllers/notificacion_controlador.php?action=listar', {
+            credentials: 'include'
+        });
 
-                    if (!resp.ok) {
-                        if (resp.status === 401) {
-                            notificationsView.innerHTML = '<div class="notification">Problema de sesión al cargar notificaciones</div>';
-                            return;
-                        }
-                        throw new Error(`Error HTTP: ${resp.status}`);
-                    }
-
-                    const data = await resp.json();
-
-                    if (!Array.isArray(data) || data.length === 0) {
-                        notificationsView.innerHTML = '<div class="notification">No tienes notificaciones.</div>';
-                        return;
-                    }
-
-                    notificationsView.innerHTML = '';
-                    data.forEach(n => {
-                        const div = document.createElement('div');
-                        div.className = 'notification';
-                        div.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <strong>${escapeHtml(n.origen_nombres || 'Sistema')}</strong>
-                                    <div style="font-size:13px; color:#666;">${escapeHtml(n.mensaje || n.tipo)}</div>
-                                    <div style="font-size:12px; color:#999;">${new Date(n.fecha).toLocaleString()}</div>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:6px;">
-                                    <button class="btn-small" onclick="verNotificacion(${n.id_notificacion}, ${n.id_reporte || 'null'})">Ver</button>
-                                    <button class="btn-small" onclick="marcarLeida(${n.id_notificacion}, this)">${n.leida == 1 ? 'Leída' : 'Marcar leída'}</button>
-                                </div>
-                            </div>
-                        `;
-                        notificationsView.appendChild(div);
-                    });
-                } catch (err) {
-                    console.error(err);
-                    notificationsView.innerHTML = '<div class="notification">Error al cargar notificaciones</div>';
-                }
+        if (!resp.ok) {
+            if (resp.status === 401) {
+                notificationsView.innerHTML = '<div class="notification">Problema de sesión al cargar notificaciones</div>';
+                return;
             }
+            throw new Error(`Error HTTP: ${resp.status}`);
+        }
 
+        const data = await resp.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+            notificationsView.innerHTML = `
+                <div class="no-notifications">
+                    <i class="fas fa-bell-slash" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+                    <p>No tienes notificaciones</p>
+                </div>
+            `;
+            return;
+        }
+
+        notificationsView.innerHTML = '';
+        data.forEach(n => {
+            const div = document.createElement('div');
+            div.className = `notification ${n.leida ? 'leida' : 'no-leida'}`;
+
+            // Icono según el tipo de notificación
+            let icono = '🔔';
+            if (n.tipo === 'like') icono = '👍';
+            else if (n.tipo === 'comentario') icono = '💬';
+            else if (n.tipo === 'nuevo_reporte_usuario') icono = '📢';
+
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 10px;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 20px; margin-bottom: 5px;">${icono}</div>
+                        <strong>${escapeHtml(n.origen_nombres || 'Sistema')}</strong>
+                        <div style="font-size:13px; color:#666; margin: 5px 0;">${escapeHtml(n.mensaje || n.tipo)}</div>
+                        <div style="font-size:12px; color:#999;">${new Date(n.fecha).toLocaleString('es-ES')}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${n.id_reporte ? `<button class="btn-small" onclick="verNotificacion(${n.id_notificacion}, ${n.id_reporte})">Ver</button>` : ''}
+                        <button class="btn-small ${n.leida ? 'btn-secondary' : 'btn-primary'}" onclick="marcarLeida(${n.id_notificacion}, this)">
+                            ${n.leida ? 'Leída' : 'Marcar leída'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            notificationsView.appendChild(div);
+        });
+
+        // Botón para marcar todas como leídas
+        const markAllBtn = document.createElement('button');
+        markAllBtn.className = 'btn btn-primary';
+        markAllBtn.style.margin = '15px auto';
+        markAllBtn.style.display = 'block';
+        markAllBtn.innerHTML = '<i class="fas fa-check-double"></i> Marcar todas como leídas';
+        markAllBtn.onclick = marcarTodasLeidas;
+        notificationsView.appendChild(markAllBtn);
+
+    } catch (err) {
+        console.error(err);
+        notificationsView.innerHTML = '<div class="notification error">Error al cargar notificaciones</div>';
+    }
+}
+async function marcarTodasLeidas() {
+    try {
+        const resp = await fetch('../../controllers/notificacion_controlador.php?action=marcar_todas_leidas', {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        const result = await resp.json();
+        if (result.success) {
+            // Recargar notificaciones
+            cargarNotificacionesSuave();
+        }
+    } catch (error) {
+        console.error('Error marcando todas como leídas:', error);
+    }
+}
             // FUNCIÓN PARA OBTENER ID DE USUARIO
             async function obtenerUsuarioId() {
                 if (window.usuarioId) {
@@ -655,41 +695,66 @@
 
             // Función para toggle like
             window.toggleLike = async function(id_reporte, btn) {
-                try {
-                    const id_usuario = await obtenerUsuarioId();
-                    const formData = new FormData();
-                    formData.append('id_reporte', id_reporte);
-                    formData.append('id_usuario', id_usuario);
+    try {
+        const id_usuario = await obtenerUsuarioId();
+        const formData = new FormData();
+        formData.append('id_reporte', id_reporte);
+        formData.append('id_usuario', id_usuario);
 
-                    const resp = await fetch('../controllers/reportecontrolador.php?action=toggle_like', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include'
-                    });
-                    const r = await resp.json();
+        const resp = await fetch('../controllers/reportecontrolador.php?action=toggle_like', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const r = await resp.json();
 
-                    if (r.success) {
-                        const likeCount = btn.querySelector('.like-count');
-                        let currentCount = parseInt(likeCount.textContent) || 0;
+        if (r.success) {
+            const likeCount = btn.querySelector('.like-count');
+            let currentCount = parseInt(likeCount.textContent) || 0;
 
-                        if (r.action === 'liked') {
-                            btn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (currentCount + 1) + '</span>';
-                            btn.style.color = 'var(--danger)';
-                            likeCount.textContent = currentCount + 1;
-                        } else {
-                            btn.innerHTML = '<i class="far fa-heart"></i> <span class="like-count">' + (currentCount - 1) + '</span>';
-                            btn.style.color = '';
-                            likeCount.textContent = Math.max(0, currentCount - 1);
-                        }
-                    } else {
-                        alert('Error al procesar like');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert('Error al conectar con el servidor');
-                }
+            if (r.action === 'liked') {
+                btn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (currentCount + 1) + '</span>';
+                btn.style.color = 'var(--danger)';
+                likeCount.textContent = currentCount + 1;
+
+                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
+                await notificarLike(id_reporte, id_usuario);
+
+            } else {
+                btn.innerHTML = '<i class="far fa-heart"></i> <span class="like-count">' + (currentCount - 1) + '</span>';
+                btn.style.color = '';
+                likeCount.textContent = Math.max(0, currentCount - 1);
             }
+        } else {
+            alert('Error al procesar like');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error al conectar con el servidor');
+    }
+}
+// ✅ FUNCIÓN PARA NOTIFICAR LIKE
+async function notificarLike(id_reporte, id_usuario_origen) {
+    try {
+        // Obtener el dueño del reporte
+        const resp = await fetch(`../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
+        const data = await resp.json();
 
+        if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
+            const formData = new FormData();
+            formData.append('id_reporte', id_reporte);
+            formData.append('id_usuario_origen', id_usuario_origen);
+            formData.append('id_usuario_destino', data.id_usuario_destino);
+
+            await fetch('../controllers/notificacion_controlador.php?action=notificar_like', {
+                method: 'POST',
+                body: formData
+            });
+        }
+    } catch (error) {
+        console.error('Error notificando like:', error);
+    }
+}
             // Función auxiliar para crear estructura de imágenes simple
             function crearEstructuraImagenesSimple(imagenes) {
                 if (!imagenes || imagenes.length === 0) return '';

@@ -497,6 +497,37 @@ case 'contar_comentarios':
         ]);
     }
     break;
+    case 'obtener_propietario':
+    if (isset($_GET['id_reporte'])) {
+        $id_reporte = $_GET['id_reporte'];
+
+        try {
+            $sql = "SELECT id_usuario as id_usuario_destino FROM reporte WHERE id_reporte = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$id_reporte]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'id_usuario_destino' => $result['id_usuario_destino']
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Reporte no encontrado'
+                ]);
+            }
+
+        } catch (PDOException $e) {
+            error_log("Error obteniendo propietario: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error de base de datos'
+            ]);
+        }
+    }
+    break;
         default:
             // Verificar output accidental
             $unexpected_output = ob_get_contents();
