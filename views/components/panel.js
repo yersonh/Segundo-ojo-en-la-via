@@ -610,45 +610,23 @@
 
             // Función para cargar comentarios de un post
             async function cargarComentariosPost(id_reporte, postElement) {
-    try {
-        const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
-            credentials: 'include'
-        });
+                try {
+                    const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
+                        credentials: 'include'
+                    });
+                    const data = await resp.json();
 
-        // ✅ VERIFICAR SI LA RESPUESTA ES VÁLIDA
-        if (!resp.ok) {
-            throw new Error(`HTTP error! status: ${resp.status}`);
-        }
-
-        const text = await resp.text(); // ✅ PRIMERO OBTENER COMO TEXTO
-        console.log('📄 Respuesta cruda:', text); // 👀 VER QUÉ ESTÁ DEVOLVIENDO
-
-        if (!text) {
-            throw new Error('Respuesta vacía del servidor');
-        }
-
-        const data = JSON.parse(text); // ✅ LUEGO PARSEAR MANUALMENTE
-
-        const commentBtn = postElement.querySelector('.comment-btn');
-        if (commentBtn && data.total_comentarios !== undefined) {
-            const commentText = commentBtn.querySelector('span');
-            if (commentText) {
-                commentText.textContent = `Comentarios (${data.total_comentarios})`;
+                    const commentBtn = postElement.querySelector('.comment-btn');
+                    if (commentBtn && data.total_comentarios !== undefined) {
+                        const commentText = commentBtn.querySelector('span');
+                        if (commentText) {
+                            commentText.textContent = `Comentarios (${data.total_comentarios})`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando comentarios:', error);
+                }
             }
-        }
-    } catch (error) {
-        console.error('❌ Error cargando comentarios:', error);
-
-        // ✅ MOSTRAR VALOR POR DEFECTO EN CASO DE ERROR
-        const commentBtn = postElement.querySelector('.comment-btn');
-        if (commentBtn) {
-            const commentText = commentBtn.querySelector('span');
-            if (commentText) {
-                commentText.textContent = 'Comentarios (0)';
-            }
-        }
-    }
-}
 
             // Función para verificar si el usuario actual dio like
             async function verificarLikeUsuario(id_reporte, postElement) {
