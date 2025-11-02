@@ -81,7 +81,7 @@ class NotificationManager {
         if (notifIcon && notifPanel) {
             notifIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                notifPanel.classList.toggle('active');
+                notifPanel.classList.toggle('show');
                 this.initAudioContext();
             });
         }
@@ -89,7 +89,7 @@ class NotificationManager {
         // Cerrar panel al hacer click fuera
         document.addEventListener('click', (e) => {
             if (notifPanel && !notifPanel.contains(e.target) && !notifIcon.contains(e.target)) {
-                notifPanel.classList.remove('active');
+                notifPanel.classList.remove('show');
             }
         });
 
