@@ -476,6 +476,9 @@ case 'contar_comentarios':
         $id_reporte = $_GET['id_reporte'];
 
         try {
+            // ✅ AGREGAR HEADERS JSON EXPLÍCITOS
+            header('Content-Type: application/json');
+
             $sql = "SELECT COUNT(*) as total_comentarios FROM comentario_reporte WHERE id_reporte = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$id_reporte]);
@@ -484,17 +487,22 @@ case 'contar_comentarios':
             echo json_encode([
                 'total_comentarios' => (int)$result['total_comentarios']
             ]);
+            exit; // ✅ IMPORTANTE: Salir después del JSON
 
         } catch (PDOException $e) {
             error_log("Error contando comentarios: " . $e->getMessage());
+            header('Content-Type: application/json');
             echo json_encode([
                 'total_comentarios' => 0
             ]);
+            exit;
         }
     } else {
+        header('Content-Type: application/json');
         echo json_encode([
             'total_comentarios' => 0
         ]);
+        exit;
     }
     break;
         default:
