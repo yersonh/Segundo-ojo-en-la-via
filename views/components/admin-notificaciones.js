@@ -112,7 +112,7 @@ class NotificationManager {
     async cargarNotificacionesPanel() {
     try {
         console.log('📡 Cargando notificaciones del panel...');
-        const response = await fetch('../controllers/notificacion_controlador.php?action=obtener_nuevas', {
+        const response = await fetch('../../controllers/notificacion_controlador.php?action=obtener_nuevas', {
             credentials: 'include'  // 🆕 ESTO ES CLAVE
         });
 
@@ -169,7 +169,7 @@ class NotificationManager {
 
         try {
             // 🆕 URL DIRECTA SIN TOKEN
-            const sseUrl = '../controllers/sse_notificaciones.php';
+            const sseUrl = '../../controllers/sse_notificaciones.php';
             console.log('🔌 Conectando a SSE directamente...');
 
             // Timeout de conexión por seguridad
@@ -303,7 +303,7 @@ class NotificationManager {
 
     async verificarNotificacionesPolling() {
     try {
-        const response = await fetch(`../controllers/notificacion_controlador.php?action=obtener_nuevas`, {
+        const response = await fetch(`../../controllers/notificacion_controlador.php?action=obtener_nuevas`, {
             credentials: 'include'
         });
 
@@ -614,7 +614,7 @@ class NotificationManager {
         formData.append('id_notificacion', idNotificacion);
         formData.append('action', 'marcar_notificacion_leida');
 
-        const response = await fetch('../controllers/notificacion_controlador.php', {
+        const response = await fetch('../../controllers/notificacion_controlador.php', {
             method: 'POST',
             body: formData,
             credentials: 'include'  // 🆕 AGREGAR
@@ -643,7 +643,7 @@ class NotificationManager {
         const formData = new FormData();
         formData.append('action', 'marcar_todas_leidas');
 
-        const response = await fetch('../controllers/notificacion_controlador.php', {
+        const response = await fetch('../../controllers/notificacion_controlador.php', {
             method: 'POST',
             body: formData,
             credentials: 'include'  // 🆕 AGREGAR
