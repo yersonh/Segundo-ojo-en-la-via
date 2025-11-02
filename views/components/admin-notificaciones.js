@@ -112,7 +112,14 @@ class NotificationManager {
     async cargarNotificacionesPanel() {
     try {
         console.log('📡 Cargando notificaciones del panel...');
-        const response = await fetch('../controllers/notificacion_controlador.php?action=obtener_nuevas');
+        const response = await fetch('../controllers/notificacion_controlador.php?action=obtener_nuevas', {
+            credentials: 'include'  // 🆕 ESTO ES CLAVE
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -295,21 +302,27 @@ class NotificationManager {
     }
 
     async verificarNotificacionesPolling() {
-        try {
-            const response = await fetch(`../controllers/notificacion_controlador.php?action=obtener_nuevas`);
-            const data = await response.json();
+    try {
+        const response = await fetch(`../controllers/notificacion_controlador.php?action=obtener_nuevas`, {
+            credentials: 'include'
+        });
 
-            if (data.success && data.notificaciones && data.notificaciones.length > 0) {
-                console.log(`📨 ${data.notificaciones.length} nuevas notificaciones vía polling`);
-                data.notificaciones.forEach(notif => {
-                    this.handleNuevaNotificacion(notif);
-                });
-            }
-        } catch (error) {
-            console.error('Error en polling:', error);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    }
 
+        const data = await response.json();
+
+        if (data.success && data.notificaciones && data.notificaciones.length > 0) {
+            console.log(`📨 ${data.notificaciones.length} nuevas notificaciones vía polling`);
+            data.notificaciones.forEach(notif => {
+                this.handleNuevaNotificacion(notif);
+            });
+        }
+    } catch (error) {
+        console.error('Error en polling:', error);
+    }
+}
     disconnectSSE() {
         if (this.eventSource) {
             this.eventSource.close();
@@ -596,55 +609,65 @@ class NotificationManager {
     }
 
     async marcarComoLeida(idNotificacion, element) {
-        try {
-            const formData = new FormData();
-            formData.append('id_notificacion', idNotificacion);
-            formData.append('action', 'marcar_notificacion_leida');
+    try {
+        const formData = new FormData();
+        formData.append('id_notificacion', idNotificacion);
+        formData.append('action', 'marcar_notificacion_leida');
 
-            const response = await fetch('../controllers/notificacion_controlador.php', {
-                method: 'POST',
-                body: formData
-            });
+        const response = await fetch('../controllers/notificacion_controlador.php', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'  // 🆕 AGREGAR
+        });
 
-            const result = await response.json();
-
-            if (result.success) {
-                element.classList.remove('no-leida');
-                element.querySelector('.btn-marcar-leida')?.remove();
-                this.updateNotificationBadge(-1);
-                this.showToast('Notificación marcada como leída', 'success');
-            }
-        } catch (error) {
-            console.error('Error marcando notificación como leída:', error);
-            this.showToast('Error al marcar como leída', 'error');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const result = await response.json();
+
+        if (result.success) {
+            element.classList.remove('no-leida');
+            element.querySelector('.btn-marcar-leida')?.remove();
+            this.updateNotificationBadge(-1);
+            this.showToast('Notificación marcada como leída', 'success');
+        }
+    } catch (error) {
+        console.error('Error marcando notificación como leída:', error);
+        this.showToast('Error al marcar como leída', 'error');
     }
+}
 
     async marcarTodasLeidas() {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'marcar_todas_leidas');
+    try {
+        const formData = new FormData();
+        formData.append('action', 'marcar_todas_leidas');
 
-            const response = await fetch('../controllers/notificacion_controlador.php', {
-                method: 'POST',
-                body: formData
-            });
+        const response = await fetch('../controllers/notificacion_controlador.php', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'  // 🆕 AGREGAR
+        });
 
-            const result = await response.json();
-
-            if (result.success) {
-                document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
-                    item.classList.remove('no-leida');
-                    item.querySelector('.btn-marcar-leida')?.remove();
-                });
-                this.updateNotificationBadge(0);
-                this.showToast('Todas las notificaciones marcadas como leídas', 'success');
-            }
-        } catch (error) {
-            console.error('Error marcando todas como leídas:', error);
-            this.showToast('Error al marcar todas como leídas', 'error');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const result = await response.json();
+
+        if (result.success) {
+            document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
+                item.classList.remove('no-leida');
+                item.querySelector('.btn-marcar-leida')?.remove();
+            });
+            this.updateNotificationBadge(0);
+            this.showToast('Todas las notificaciones marcadas como leídas', 'success');
+        }
+    } catch (error) {
+        console.error('Error marcando todas como leídas:', error);
+        this.showToast('Error al marcar todas como leídas', 'error');
     }
+}
 
     updateNotificationBadge(count) {
         const badge = document.querySelector('.notificacion-badge');
