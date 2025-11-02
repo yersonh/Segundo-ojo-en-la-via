@@ -378,7 +378,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                         <!-- Columna Principal -->
                         <div class="profile-main">
                             <!-- Información Personal -->
-                            <div class="profile-card">
+                            <div class="profile-card" id="profileInfoCard">
                                 <div class="profile-card-header">
                                     <h3><i class="fas fa-user"></i> Información Personal</h3>
                                 </div>
@@ -675,8 +675,73 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         // Variable global con la URL del mapa
         const mapUrl = '<?php echo $mapUrl; ?>';
 
+        // Gestión SIMPLE del Perfil - SOLO para mostrar/ocultar formulario
+        class SimpleProfileManager {
+            constructor() {
+                this.isEditing = false;
+                this.init();
+            }
+
+            init() {
+                console.log('👤 Inicializando SimpleProfileManager...');
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Botón Editar Perfil
+                const btnEditProfile = document.getElementById('btnEditProfile');
+                if (btnEditProfile) {
+                    btnEditProfile.addEventListener('click', () => {
+                        this.toggleEditMode();
+                    });
+                    console.log('✅ Event listener agregado al botón Editar Perfil');
+                } else {
+                    console.error('❌ No se encontró el botón btnEditProfile');
+                }
+
+                // Botón Cancelar (solo para ocultar el formulario)
+                const btnCancelProfile = document.getElementById('btnCancelProfile');
+                if (btnCancelProfile) {
+                    btnCancelProfile.addEventListener('click', () => {
+                        this.toggleEditMode();
+                    });
+                }
+
+                // Botón Guardar (por ahora solo oculta el formulario)
+                const btnSaveProfile = document.getElementById('btnSaveProfile');
+                if (btnSaveProfile) {
+                    btnSaveProfile.addEventListener('click', () => {
+                        alert('Funcionalidad de guardar aún no implementada');
+                        this.toggleEditMode();
+                    });
+                }
+            }
+
+            toggleEditMode() {
+                this.isEditing = !this.isEditing;
+
+                const profileInfo = document.getElementById('profileInfoCard');
+                const profileForm = document.getElementById('profileForm');
+
+                if (this.isEditing) {
+                    // Cambiar a modo edición
+                    if (profileInfo) profileInfo.style.display = 'none';
+                    if (profileForm) profileForm.style.display = 'block';
+                    console.log('📝 Modo edición activado');
+                } else {
+                    // Volver a modo visualización
+                    if (profileInfo) profileInfo.style.display = 'block';
+                    if (profileForm) profileForm.style.display = 'none';
+                    console.log('👀 Modo visualización activado');
+                }
+            }
+        }
+
         // Navegación entre vistas
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar SimpleProfileManager
+            window.simpleProfileManager = new SimpleProfileManager();
+
             const navItems = document.querySelectorAll('.nav-item');
             const views = document.querySelectorAll('#feedView, #notificationsView, #mapView, #profileView');
 
