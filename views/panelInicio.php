@@ -361,26 +361,26 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 <span>Ojo en la Vía</span>
             </div>
             <div class="user-menu">
-                <div class="header-user-info" onclick="document.querySelector('.nav-item[data-target=\"profileView\"]').click()">
-                    <?php if (!empty($foto_perfil)): ?>
-                        <img src="<?php echo htmlspecialchars($foto_perfil); ?>"
-                             alt="Foto de perfil"
-                             class="header-avatar"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="default-avatar" style="display: none;">
-                            <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="default-avatar">
-                            <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="header-user-details">
-                        <div class="header-user-name"><?php echo htmlspecialchars($usuario_nombres . ' ' . ($usuario_apellidos ?? '')); ?></div>
-                        <div class="header-user-role">Usuario</div>
-                    </div>
-                </div>
+    <div class="header-user-info" onclick="document.querySelector('.nav-item[data-target=\"profileView\"]').click()">
+        <?php if (!empty($foto_perfil)): ?>
+            <img src="<?php echo htmlspecialchars($foto_perfil); ?>"
+                 alt="Foto de perfil"
+                 class="header-avatar"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="default-avatar" style="display: none;">
+                <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
             </div>
+        <?php else: ?>
+            <div class="default-avatar">
+                <?php echo strtoupper(substr($usuario_nombres, 0, 1)); ?>
+            </div>
+        <?php endif; ?>
+        <div class="header-user-details">
+            <div class="header-user-name"><?php echo htmlspecialchars($usuario_nombres . ' ' . ($usuario_apellidos ?? '')); ?></div>
+            <div class="header-user-role">Usuario</div>
+        </div>
+    </div>
+</div>
         </header>
 
         <!-- CONTENEDOR PRINCIPAL -->
