@@ -1,4 +1,4 @@
-// admin.js - Versión completa con sistema de alertas y notificaciones
+// admin.js - Versión limpia sin sistema de notificaciones
 class AdminManager {
     constructor() {
         this.map = null;
@@ -15,8 +15,6 @@ class AdminManager {
         this.setupEventListeners();
         this.setupLogoutHandler();
         this.setupAlertHandlers();
-        //this.initSSE();
-        this.setupNotificaciones();
         this.initializeMapIfNeeded();
     }
 
@@ -533,7 +531,7 @@ class AdminManager {
     }
 
     // ==============================================
-    // SISTEMA DE ALERTAS Y NOTIFICACIONES
+    // SISTEMA DE ALERTAS A AUTORIDADES (MANTENER)
     // ==============================================
 
     setupAlertHandlers() {
@@ -550,47 +548,6 @@ class AdminManager {
 
         // Configurar modal de alertas
         this.setupModalAlerta();
-    }
-    /*
-    initSSE() {
-        try {
-            const eventSource = new EventSource('${window.location.origin}/../../controllers/sse_notificaciones.php');
-
-            eventSource.addEventListener("ping", (e) => {
-                console.log("🔄 Conexión SSE activa", JSON.parse(e.data));
-            });
-
-            eventSource.addEventListener("nuevo_reporte", (e) => {
-                const data = JSON.parse(e.data);
-                console.log("📥 Nuevo reporte recibido:", data);
-
-                // Mostrar alerta visual
-                this.mostrarNotificacionFlotante(`Nuevo reporte #${data.id_reporte} registrado`, "info");
-
-                // Refrescar mapa y lista de reportes automáticamente
-                this.refreshMap();
-            });
-
-            eventSource.onerror = (err) => {
-                console.warn("❌ Error en la conexión SSE", err);
-            };
-        } catch (e) {
-            console.error("Error inicializando SSE:", e);
-        }
-    }
-*/
-    // Pequeña utilidad visual para avisar
-    mostrarNotificacionFlotante(mensaje, tipo = "info") {
-        const div = document.createElement("div");
-        div.textContent = mensaje;
-        div.className = `notificacion-flotante ${tipo}`;
-        document.body.appendChild(div);
-
-        setTimeout(() => {
-            div.classList.add("visible");
-            setTimeout(() => div.classList.remove("visible"), 4000);
-            setTimeout(() => div.remove(), 4500);
-        }, 100);
     }
 
     setupModalAlerta() {
@@ -742,108 +699,6 @@ class AdminManager {
             btnEnviar.innerHTML = originalText;
             btnEnviar.disabled = false;
         });
-    }
-
-    setupNotificaciones() {
-        const icono = document.getElementById('notificacionIcon');
-        const panel = document.getElementById('notificacionesPanel');
-
-        if (!icono || !panel) return;
-
-        // Toggle panel
-        icono.addEventListener('click', (e) => {
-            e.stopPropagation();
-            panel.classList.toggle('show');
-        });
-
-        // Cerrar al hacer click fuera
-        document.addEventListener('click', (e) => {
-            if (!panel.contains(e.target) && !icono.contains(e.target)) {
-                panel.classList.remove('show');
-            }
-        });
-
-        // Marcar como leída individual
-        panel.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-marcar-leida')) {
-                const item = e.target.closest('.notificacion-item');
-                const idNotificacion = item.getAttribute('data-id');
-                this.marcarNotificacionLeida(idNotificacion, item);
-            }
-        });
-
-        // Marcar todas como leídas
-        const btnMarcarTodas = document.getElementById('marcarTodasLeidas');
-        if (btnMarcarTodas) {
-            btnMarcarTodas.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.marcarTodasLeidas();
-            });
-        }
-    }
-
-    async marcarNotificacionLeida(idNotificacion, elemento) {
-        try {
-            const formData = new FormData();
-            formData.append('action', 'marcar_notificacion_leida');
-            formData.append('id_notificacion', idNotificacion);
-
-            const response = await fetch('admin.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                elemento.classList.remove('no-leida');
-                const btnLeida = elemento.querySelector('.btn-marcar-leida');
-                if (btnLeida) btnLeida.remove();
-                this.actualizarContadorNotificaciones();
-            }
-        } catch (error) {
-            console.error('Error marcando notificación:', error);
-        }
-    }
-
-    async marcarTodasLeidas() {
-        try {
-            const response = await fetch('admin.php?action=marcar_todas_leidas', {
-                method: 'POST'
-            });
-
-            if (response.ok) {
-                // Actualizar UI
-                document.querySelectorAll('.notificacion-item').forEach(item => {
-                    item.classList.remove('no-leida');
-                    const btnLeida = item.querySelector('.btn-marcar-leida');
-                    if (btnLeida) btnLeida.remove();
-                });
-
-                // Ocultar badge
-                const badge = document.querySelector('.notificacion-badge');
-                if (badge) badge.remove();
-
-                // Actualizar contador en header
-                const countElement = document.querySelector('.notificacion-count');
-                if (countElement) countElement.textContent = '0 sin leer';
-            }
-        } catch (error) {
-            console.error('Error marcando todas las notificaciones:', error);
-        }
-    }
-
-    actualizarContadorNotificaciones() {
-        // Podemos hacer una petición AJAX para actualizar el contador
-        // Por simplicidad, recargamos la página cada 30 segundos si hay notificaciones nuevas
-        const badge = document.querySelector('.notificacion-badge');
-        if (badge) {
-            // Solo recargar si el usuario no está viendo el panel
-            const panel = document.getElementById('notificacionesPanel');
-            if (!panel.classList.contains('show')) {
-                setTimeout(() => {
-                    location.reload();
-                }, 30000);
-            }
-        }
     }
 }
 
