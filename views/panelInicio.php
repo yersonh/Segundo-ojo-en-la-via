@@ -267,72 +267,37 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         cursor: not-allowed;
     }
 
-    /* Estilos para la foto de perfil en el header */
-    .header-user-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 16px;
-        border-radius: 25px;
-        background: rgba(255, 255, 255, 0.1);
+    /* Estilos para notificaciones del perfil */
+    .profile-notification {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        transform: translateX(400px);
+        opacity: 0;
         transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .header-user-info:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .header-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .header-user-details {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .header-user-name {
-        font-weight: 600;
-        font-size: 0.9rem;
         color: white;
-        line-height: 1.2;
     }
 
-    .header-user-role {
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.8);
-        line-height: 1.2;
+    .profile-notification-success {
+        background: #28a745;
     }
 
-    /* Avatar por defecto cuando no hay foto */
-    .default-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .profile-notification-error {
+        background: #dc3545;
+    }
+
+    .profile-notification-info {
+        background: #17a2b8;
+    }
+
+    .notification-content {
         display: flex;
         align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 1rem;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    /* Responsive para el header */
-    @media (max-width: 768px) {
-        .header-user-details {
-            display: none;
-        }
-
-        .header-user-info {
-            padding: 8px;
-        }
+        gap: 10px;
     }
 
     /* Responsive */
@@ -349,19 +314,25 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         .modal-body {
             padding: 15px;
         }
+
+        .profile-notification {
+            right: 10px;
+            left: 10px;
+            transform: translateY(-100px);
+        }
     }
 </style>
 </head>
 <body>
     <div class="app">
-        <!-- Header mejorado con foto de perfil -->
+        <!-- Header SIMPLIFICADO - Solo el logo -->
         <header class="app-header">
             <div class="logo">
                 <i class="fas fa-eye"></i>
                 <span>Ojo en la Vía</span>
             </div>
             <div class="user-menu">
-
+                <!-- Aquí estaba el área del usuario que QUITÉ -->
             </div>
         </header>
 
@@ -434,6 +405,8 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                                     <div id="defaultProfileAvatar" class="profile-default-avatar">
                                         <?php echo strtoupper(substr($usuario_nombres, 0, 1) . substr($usuario_apellidos ?? '', 0, 1)); ?>
                                     </div>
+                                    <img id="profileAvatar" class="profile-main-avatar" style="display: none;"
+                                         src="" alt="Avatar del usuario">
                                 <?php endif; ?>
                                 <div class="avatar-edit-btn" id="editAvatarBtn" title="Cambiar foto de perfil">
                                     <i class="fas fa-camera"></i>
@@ -508,7 +481,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                                 <div class="profile-card-header">
                                     <h3><i class="fas fa-edit"></i> Editar Perfil</h3>
                                 </div>
-                                <input type="file" id="fotoPerfil" name="foto" accept="image/*" style="display: none;">
+
+                                <!-- 🆕 Input oculto para subir foto -->
+                                <input type="file" id="fotoPerfil" name="foto_perfil" accept="image/*" style="display: none;">
 
                                 <div class="form-grid">
                                     <div class="form-group">
@@ -756,16 +731,17 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         // Variable global con la URL del mapa
         const mapUrl = '<?php echo $mapUrl; ?>';
 
-        // Gestión SIMPLE del Perfil - SOLO para mostrar/ocultar formulario
-        class SimpleProfileManager {
+        // 🆕 GESTIÓN COMPLETA DEL PERFIL CON SUBIDA DE FOTO
+        class ProfileManager {
             constructor() {
                 this.isEditing = false;
                 this.init();
             }
 
             init() {
-                console.log('👤 Inicializando SimpleProfileManager...');
+                console.log('👤 Inicializando ProfileManager...');
                 this.setupEventListeners();
+                this.setupPhotoUpload();
             }
 
             setupEventListeners() {
@@ -780,7 +756,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     console.error('❌ No se encontró el botón btnEditProfile');
                 }
 
-                // Botón Cancelar (solo para ocultar el formulario)
+                // Botón Cancelar
                 const btnCancelProfile = document.getElementById('btnCancelProfile');
                 if (btnCancelProfile) {
                     btnCancelProfile.addEventListener('click', () => {
@@ -788,22 +764,200 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     });
                 }
 
-                // Botón Guardar (por ahora solo oculta el formulario)
+                // Botón Guardar
                 const btnSaveProfile = document.getElementById('btnSaveProfile');
                 if (btnSaveProfile) {
                     btnSaveProfile.addEventListener('click', () => {
-                        alert('Funcionalidad de guardar aún no implementada');
-                        this.toggleEditMode();
+                        this.guardarPerfil();
                     });
+                }
+            }
+
+            setupPhotoUpload() {
+                const editAvatarBtn = document.getElementById('editAvatarBtn');
+                const fotoPerfilInput = document.getElementById('fotoPerfil');
+
+                if (editAvatarBtn && fotoPerfilInput) {
+                    editAvatarBtn.addEventListener('click', () => {
+                        fotoPerfilInput.click();
+                    });
+
+                    fotoPerfilInput.addEventListener('change', (e) => {
+                        this.handleImageUpload(e);
+                    });
+                    console.log('✅ Configuración de subida de foto completada');
+                } else {
+                    console.warn('⚠️ Elementos de subida de foto no encontrados');
+                }
+            }
+
+            handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    this.mostrarNotificacion('❌ Por favor selecciona una imagen válida (JPEG, PNG, GIF)', 'error');
+                    return;
                 }
 
-                // Botón para cambiar avatar
-                const editAvatarBtn = document.getElementById('editAvatarBtn');
-                if (editAvatarBtn) {
-                    editAvatarBtn.addEventListener('click', () => {
-                        alert('Funcionalidad para cambiar foto de perfil aún no implementada');
-                    });
+                // Validar tamaño (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    this.mostrarNotificacion('❌ La imagen debe ser menor a 5MB', 'error');
+                    return;
                 }
+
+                // Mostrar preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const profileAvatar = document.getElementById('profileAvatar');
+                    const defaultProfileAvatar = document.getElementById('defaultProfileAvatar');
+
+                    if (profileAvatar) {
+                        profileAvatar.src = e.target.result;
+                        profileAvatar.style.display = 'block';
+                    }
+                    if (defaultProfileAvatar) {
+                        defaultProfileAvatar.style.display = 'none';
+                    }
+
+                    this.mostrarNotificacion('📷 Vista previa de imagen cargada. Guarda los cambios para aplicarla.', 'info');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            async guardarPerfil() {
+                try {
+                    const formData = new FormData();
+
+                    // Agregar datos del formulario
+                    formData.append('nombres', document.getElementById('inpNombres').value);
+                    formData.append('apellidos', document.getElementById('inpApellidos').value);
+                    formData.append('telefono', document.getElementById('inpTelefono').value);
+                    formData.append('action', 'actualizar_perfil');
+
+                    // Agregar foto si se seleccionó una nueva
+                    const fotoInput = document.getElementById('fotoPerfil');
+                    if (fotoInput.files[0]) {
+                        formData.append('foto_perfil', fotoInput.files[0]);
+                    }
+
+                    // Mostrar loading
+                    const btnSave = document.getElementById('btnSaveProfile');
+                    const originalText = btnSave.innerHTML;
+                    btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                    btnSave.disabled = true;
+
+                    const response = await fetch('../controllers/perfilcontrolador.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+
+                        if (result.success) {
+                            // Actualizar la UI con los nuevos datos
+                            this.actualizarUI(result.data);
+
+                            // Mostrar notificación de éxito
+                            this.mostrarNotificacion('✅ Perfil actualizado correctamente', 'success');
+
+                            // Salir del modo edición
+                            this.toggleEditMode();
+
+                            // Limpiar input de archivo
+                            fotoInput.value = '';
+                        } else {
+                            throw new Error(result.message || 'Error al actualizar perfil');
+                        }
+                    } else {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+
+                } catch (error) {
+                    console.error('Error al guardar perfil:', error);
+                    this.mostrarNotificacion('❌ Error al actualizar perfil: ' + error.message, 'error');
+                } finally {
+                    // Restaurar botón
+                    const btnSave = document.getElementById('btnSaveProfile');
+                    if (btnSave) {
+                        btnSave.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+                        btnSave.disabled = false;
+                    }
+                }
+            }
+
+            actualizarUI(userData) {
+                // Actualizar elementos de la UI
+                const elementsToUpdate = {
+                    'profileName': userData.nombres + ' ' + userData.apellidos,
+                    'profileNames': userData.nombres,
+                    'profileLastnames': userData.apellidos,
+                    'profilePhone': userData.telefono,
+                    'profilePhoneCard': userData.telefono
+                };
+
+                for (const [id, value] of Object.entries(elementsToUpdate)) {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    }
+                }
+
+                // Actualizar avatar si hay nueva imagen
+                if (userData.foto_perfil) {
+                    this.actualizarAvatar(userData.foto_perfil);
+                }
+
+                console.log('✅ UI actualizada con nuevos datos');
+            }
+
+            actualizarAvatar(imageUrl) {
+                const profileAvatar = document.getElementById('profileAvatar');
+                const defaultProfileAvatar = document.getElementById('defaultProfileAvatar');
+
+                if (profileAvatar && defaultProfileAvatar) {
+                    if (imageUrl) {
+                        profileAvatar.src = imageUrl + '?t=' + new Date().getTime(); // Cache bust
+                        profileAvatar.style.display = 'block';
+                        defaultProfileAvatar.style.display = 'none';
+                    } else {
+                        profileAvatar.style.display = 'none';
+                        defaultProfileAvatar.style.display = 'flex';
+                    }
+                }
+            }
+
+            mostrarNotificacion(mensaje, tipo = 'info') {
+                // Crear notificación temporal
+                const notification = document.createElement('div');
+                notification.className = `profile-notification profile-notification-${tipo}`;
+                notification.innerHTML = `
+                    <div class="notification-content">
+                        <i class="fas fa-${tipo === 'success' ? 'check' : tipo === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                        <span>${mensaje}</span>
+                    </div>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Animación de entrada
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                    notification.style.opacity = '1';
+                }, 100);
+
+                // Auto-eliminar después de 3 segundos
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(400px)';
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
             }
 
             toggleEditMode() {
@@ -814,22 +968,48 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                 if (this.isEditing) {
                     // Cambiar a modo edición
-                    if (profileInfo) profileInfo.style.display = 'none';
-                    if (profileForm) profileForm.style.display = 'block';
+                    profileInfo.style.display = 'none';
+                    profileForm.style.display = 'block';
                     console.log('📝 Modo edición activado');
                 } else {
                     // Volver a modo visualización
-                    if (profileInfo) profileInfo.style.display = 'block';
-                    if (profileForm) profileForm.style.display = 'none';
+                    profileInfo.style.display = 'block';
+                    profileForm.style.display = 'none';
+
+                    // Limpiar input de archivo al cancelar
+                    const fotoInput = document.getElementById('fotoPerfil');
+                    if (fotoInput) {
+                        fotoInput.value = '';
+                    }
+
+                    // Restaurar avatar original si se había cambiado
+                    this.restaurarAvatarOriginal();
+
                     console.log('👀 Modo visualización activado');
+                }
+            }
+
+            restaurarAvatarOriginal() {
+                const profileAvatar = document.getElementById('profileAvatar');
+                const defaultProfileAvatar = document.getElementById('defaultProfileAvatar');
+
+                if (profileAvatar && defaultProfileAvatar) {
+                    if (window.usuarioFotoPerfil) {
+                        profileAvatar.src = window.usuarioFotoPerfil;
+                        profileAvatar.style.display = 'block';
+                        defaultProfileAvatar.style.display = 'none';
+                    } else {
+                        profileAvatar.style.display = 'none';
+                        defaultProfileAvatar.style.display = 'flex';
+                    }
                 }
             }
         }
 
         // Navegación entre vistas
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar SimpleProfileManager
-            window.simpleProfileManager = new SimpleProfileManager();
+            // Inicializar ProfileManager
+            window.profileManager = new ProfileManager();
 
             const navItems = document.querySelectorAll('.nav-item');
             const views = document.querySelectorAll('#feedView, #notificationsView, #mapView, #profileView');
