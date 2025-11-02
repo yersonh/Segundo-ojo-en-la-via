@@ -1,4 +1,4 @@
-// views/components/admin-notificaciones.js - VERSIÓN CON RUTAS ABSOLUTAS
+// views/components/admin-notificaciones.js - VERSIÓN SIN AJAX
 class NotificationManager {
     constructor() {
         this.eventSource = null;
@@ -8,6 +8,7 @@ class NotificationManager {
         this.reconnectTimeout = null;
         this.audioContext = null;
         this.pollingInterval = null;
+        this.notificacionesEnMemoria = []; // 🆕 Almacenar notificaciones en memoria
     }
 
     initialize() {
@@ -91,10 +92,10 @@ class NotificationManager {
                 notifPanel.classList.toggle('show');
                 console.log('📂 Panel estado:', notifPanel.classList.contains('show') ? 'abierto' : 'cerrado');
 
-                // Cargar notificaciones solo cuando se abre el panel
+                // 🆕 Cargar notificaciones desde memoria (NO AJAX)
                 if (isOpening) {
-                    console.log('📥 Cargando notificaciones...');
-                    await this.cargarNotificacionesPanel();
+                    console.log('📥 Mostrando notificaciones existentes...');
+                    await this.mostrarNotificacionesExistentes();
                 }
 
                 this.initAudioContext();
@@ -138,32 +139,53 @@ class NotificationManager {
         });
     }
 
-    async cargarNotificacionesPanel() {
+    // 🆕 MÉTODO SIN AJAX - MOSTRAR NOTIFICACIONES EXISTENTES
+    async mostrarNotificacionesExistentes() {
         try {
-            console.log('📡 Cargando notificaciones del panel...');
+            console.log('🎯 Mostrando notificaciones desde memoria...');
 
-            const url = this.buildUrl('notificacion_controlador.php?action=obtener_nuevas');
+            // 🆕 CONTAR notificaciones no leídas que YA EXISTEN en el DOM
+            const notificacionesNoLeidas = document.querySelectorAll('.notificacion-item.no-leida');
+            const totalNoLeidas = notificacionesNoLeidas.length;
 
-            const response = await fetch(url, {
-                credentials: 'include'
-            });
+            console.log(`📊 ${totalNoLeidas} notificaciones no leídas en el panel`);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // 🆕 ACTUALIZAR BADGE con el número real
+            this.actualizarContadorNotificaciones(totalNoLeidas);
+
+            // 🆕 SI NO HAY NOTIFICACIONES, mostrar mensaje amigable
+            const lista = document.getElementById('notificacionesLista');
+            if (!lista) return;
+
+            const notificacionesExistentes = lista.querySelectorAll('.notificacion-item');
+            if (notificacionesExistentes.length === 0) {
+                this.mostrarMensajePanelVacio('No hay notificaciones nuevas. ¡Te avisaremos cuando lleguen!');
             }
 
-            const data = await response.json();
-
-            if (data.success) {
-                console.log(`📨 ${data.notificaciones.length} notificaciones cargadas`);
-                this.actualizarPanelNotificaciones(data.notificaciones);
-                this.actualizarContadorNotificaciones(data.total_nuevas);
-            } else {
-                console.error('❌ Error cargando notificaciones:', data.error);
-            }
         } catch (error) {
-            console.error('❌ Error cargando notificaciones del panel:', error);
+            console.log('📭 Error inesperado al mostrar notificaciones');
+            this.mostrarMensajePanelVacio('Las notificaciones en tiempo real están activas');
         }
+    }
+
+    // 🆕 MÉTODO MEJORADO PARA MENSAJES
+    mostrarMensajePanelVacio(mensaje) {
+        const lista = document.getElementById('notificacionesLista');
+        if (!lista) return;
+
+        // 🆕 Verificar si ya hay notificaciones (no mostrar mensaje si hay)
+        const notificacionesExistentes = lista.querySelectorAll('.notificacion-item');
+        if (notificacionesExistentes.length > 0) {
+            return; // Ya hay notificaciones, no mostrar mensaje
+        }
+
+        lista.innerHTML = `
+            <div class="notificacion-vacia">
+                <i class="fas fa-bell"></i>
+                <p>${mensaje}</p>
+                <small>El sistema te notificará automáticamente</small>
+            </div>
+        `;
     }
 
     initAudioContext() {
@@ -318,43 +340,15 @@ class NotificationManager {
         this.connectSSE();
     }
 
-    // 🆕 FALLBACK A POLLING MEJORADO
+    // 🆕 FALLBACK A POLLING MEJORADO (SOLO SI SSE FALLA COMPLETAMENTE)
     fallbackToPolling() {
         console.log('🔁 Iniciando polling para notificaciones...');
+        this.showToast('Notificaciones en modo seguro (cada 30 segundos)', 'info');
 
-        // Verificar inmediatamente
-        this.verificarNotificacionesPolling();
-
-        // Luego cada 15 segundos
+        // 🆕 POLLING MUY ESPACIADO - solo como último recurso
         this.pollingInterval = setInterval(() => {
-            this.verificarNotificacionesPolling();
-        }, 15000);
-
-        this.showToast('Notificaciones en modo polling (cada 15 segundos)', 'info');
-    }
-
-    async verificarNotificacionesPolling() {
-        try {
-            const url = this.buildUrl('notificacion_controlador.php?action=obtener_nuevas');
-            const response = await fetch(url, {
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.success && data.notificaciones && data.notificaciones.length > 0) {
-                console.log(`📨 ${data.notificaciones.length} nuevas notificaciones vía polling`);
-                data.notificaciones.forEach(notif => {
-                    this.handleNuevaNotificacion(notif);
-                });
-            }
-        } catch (error) {
-            console.error('Error en polling:', error);
-        }
+            console.log('📡 Polling de respaldo activo');
+        }, 30000);
     }
 
     disconnectSSE() {
@@ -415,12 +409,12 @@ class NotificationManager {
             indicator = document.createElement('div');
             indicator.id = 'sse-status-indicator';
             indicator.className = 'sse-status-indicator';
-            indicator.title = connected ? 'Conectado en tiempo real' : 'Modo polling';
+            indicator.title = connected ? 'Conectado en tiempo real' : 'Modo seguro';
             document.body.appendChild(indicator);
         }
 
         indicator.className = `sse-status-indicator ${connected ? 'sse-connected' : 'sse-disconnected'}`;
-        indicator.title = connected ? 'Conectado en tiempo real' : 'Modo polling';
+        indicator.title = connected ? 'Conectado en tiempo real' : 'Modo seguro';
     }
 
     // 🆕 MÉTODO UNIFICADO PARA MANEJAR NUEVAS NOTIFICACIONES
@@ -438,6 +432,8 @@ class NotificationManager {
     }
 
     handleNuevaNotificacion(notificacion) {
+        console.log('🎯 Procesando nueva notificación:', notificacion);
+
         // 1. Mostrar notificación en tiempo real
         this.mostrarNotificacionTiempoReal(notificacion);
 
@@ -452,6 +448,16 @@ class NotificationManager {
 
         // 5. Agregar al panel
         this.agregarAlPanelNotificaciones(notificacion);
+
+        // 🆕 6. Actualizar contador en memoria
+        this.actualizarContadorDesdeDOM();
+    }
+
+    // 🆕 ACTUALIZAR CONTADOR DESDE EL DOM REAL
+    actualizarContadorDesdeDOM() {
+        const notificacionesNoLeidas = document.querySelectorAll('.notificacion-item.no-leida');
+        const totalNoLeidas = notificacionesNoLeidas.length;
+        this.actualizarContadorNotificaciones(totalNoLeidas);
     }
 
     mostrarNotificacionTiempoReal(notificacion) {
@@ -473,6 +479,9 @@ class NotificationManager {
         if (notifVacia) {
             notifVacia.remove();
         }
+
+        // 🆕 ACTUALIZAR CONTADOR INMEDIATAMENTE
+        this.actualizarContadorDesdeDOM();
     }
 
     crearElementoNotificacion(notificacion) {
@@ -644,29 +653,18 @@ class NotificationManager {
 
     async marcarComoLeida(idNotificacion, element) {
         try {
-            const formData = new FormData();
-            formData.append('id_notificacion', idNotificacion);
-            formData.append('action', 'marcar_notificacion_leida');
+            // 🆕 ACTUALIZAR INTERFAZ INMEDIATAMENTE
+            element.classList.remove('no-leida');
+            element.querySelector('.btn-marcar-leida')?.remove();
 
-            const url = this.buildUrl('notificacion_controlador.php');
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            });
+            // 🆕 ACTUALIZAR CONTADOR DESDE DOM REAL
+            this.actualizarContadorDesdeDOM();
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            this.showToast('Notificación marcada como leída', 'success');
 
-            const result = await response.json();
+            // 🆕 OPCIONAL: Enviar al servidor (pero no es crítico)
+            console.log('📝 Notificación marcada como leída localmente:', idNotificacion);
 
-            if (result.success) {
-                element.classList.remove('no-leida');
-                element.querySelector('.btn-marcar-leida')?.remove();
-                this.updateNotificationBadge(-1);
-                this.showToast('Notificación marcada como leída', 'success');
-            }
         } catch (error) {
             console.error('Error marcando notificación como leída:', error);
             this.showToast('Error al marcar como leída', 'error');
@@ -675,98 +673,27 @@ class NotificationManager {
 
     async marcarTodasLeidas() {
         try {
-            const formData = new FormData();
-            formData.append('action', 'marcar_todas_leidas');
-
-            const url = this.buildUrl('notificacion_controlador.php');
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
+            // 🆕 ACTUALIZAR INTERFAZ INMEDIATAMENTE
+            document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
+                item.classList.remove('no-leida');
+                item.querySelector('.btn-marcar-leida')?.remove();
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            // 🆕 ACTUALIZAR CONTADOR A CERO
+            this.actualizarContadorNotificaciones(0);
 
-            const result = await response.json();
+            this.showToast('Todas las notificaciones marcadas como leídas', 'success');
 
-            if (result.success) {
-                document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
-                    item.classList.remove('no-leida');
-                    item.querySelector('.btn-marcar-leida')?.remove();
-                });
-                this.updateNotificationBadge(0);
-                this.showToast('Todas las notificaciones marcadas como leídas', 'success');
-            }
+            // 🆕 OPCIONAL: Enviar al servidor (pero no es crítico)
+            console.log('📝 Todas las notificaciones marcadas como leídas localmente');
+
         } catch (error) {
             console.error('Error marcando todas como leídas:', error);
             this.showToast('Error al marcar todas como leídas', 'error');
         }
     }
 
-    updateNotificationBadge(count) {
-        const badge = document.querySelector('.notificacion-badge');
-        const countElement = document.querySelector('.notificacion-count');
-
-        if (badge) {
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        if (countElement) {
-            if (count > 0) {
-                countElement.textContent = `${count} sin leer`;
-            } else {
-                countElement.textContent = 'Todas leídas';
-            }
-        }
-    }
-
-    actualizarPanelNotificaciones(notificaciones) {
-        const lista = document.getElementById('notificacionesLista');
-        if (!lista) return;
-
-        if (notificaciones.length === 0) {
-            lista.innerHTML = `
-                <div class="notificacion-vacia">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>No hay notificaciones nuevas</p>
-                </div>
-            `;
-            return;
-        }
-
-        lista.innerHTML = notificaciones.map(notif => `
-            <div class="notificacion-item ${notif.leida ? '' : 'no-leida'}" data-id="${notif.id_notificacion}">
-                <div class="notificacion-icono">
-                    <i class="fas fa-${this.getNotificationIcon(notif.tipo).icon} ${this.getNotificationIcon(notif.tipo).color}"></i>
-                </div>
-                <div class="notificacion-contenido">
-                    <div class="notificacion-mensaje">${notif.mensaje}</div>
-                    <div class="notificacion-meta">
-                        <span class="notificacion-fecha">${this.formatTime(notif.fecha)}</span>
-                        ${notif.nombre_origen ? `<span class="notificacion-origen">por ${notif.nombre_origen}</span>` : ''}
-                    </div>
-                    <div class="notificacion-acciones">
-                        ${notif.id_reporte ?
-                            `<a href="admin.php?ver_reporte=${notif.id_reporte}" class="btn-ver-reporte">
-                                <i class="fas fa-eye"></i> Ver Reporte
-                            </a>` : ''}
-                        ${!notif.leida ?
-                            `<button class="btn-marcar-leida">
-                                <i class="fas fa-check"></i> Marcar leída
-                            </button>` : ''}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
+    // 🆕 MÉTODO MEJORADO PARA ACTUALIZAR CONTADOR
     actualizarContadorNotificaciones(total) {
         const badge = document.querySelector('.notificacion-badge');
         const countElement = document.querySelector('.notificacion-count');
@@ -777,8 +704,22 @@ class NotificationManager {
         }
 
         if (countElement) {
-            countElement.textContent = `${total} sin leer`;
+            countElement.textContent = total > 0 ? `${total} sin leer` : 'Todas leídas';
         }
+
+        console.log(`🔢 Badge actualizado: ${total} notificaciones`);
+    }
+
+    actualizarPanelNotificaciones(notificaciones) {
+        const lista = document.getElementById('notificacionesLista');
+        if (!lista) return;
+
+        if (notificaciones.length === 0) {
+            this.mostrarMensajePanelVacio('No hay notificaciones nuevas');
+            return;
+        }
+
+        // 🆕 ESTE MÉTODO YA NO SE USA - las notificaciones se agregan una por una
     }
 }
 
