@@ -1,4 +1,4 @@
-// Panel.js - Versión completa con sistema de contador de notificaciones
+// Panel.js - Versión corregida con sistema de likes funcionando
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando panel...');
 
@@ -25,9 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Cargar datos iniciales del feed
             cargarFeedSuave();
-
-            // 🆕 INICIAR CONTADOR DE NOTIFICACIONES
-            iniciarActualizacionContador();
 
             console.log('✅ Panel inicializado correctamente');
 
@@ -189,65 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// 🆕 FUNCIÓN PARA CARGAR CONTADOR DE NOTIFICACIONES
-async function cargarContadorNotificaciones() {
-    try {
-        console.log('🔔 Cargando contador de notificaciones...');
-
-        const resp = await fetch('../../controllers/notificacion_controlador.php?action=contar_no_leidas', {
-            method: 'GET',
-            credentials: 'include'
-        });
-
-        if (!resp.ok) {
-            throw new Error(`Error HTTP: ${resp.status}`);
-        }
-
-        const data = await resp.json();
-
-        const badge = document.getElementById('notificationBadge');
-
-        if (badge) {
-            if (data.success && data.total_no_leidas > 0) {
-                // Mostrar badge con el número
-                badge.textContent = data.total_no_leidas > 99 ? '99+' : data.total_no_leidas;
-                badge.style.display = 'flex';
-
-                console.log(`✅ Notificaciones no leídas: ${data.total_no_leidas}`);
-            } else {
-                // Ocultar badge si no hay notificaciones
-                badge.style.display = 'none';
-                console.log('✅ No hay notificaciones no leídas');
-            }
-        }
-
-        return data.total_no_leidas || 0;
-
-    } catch (error) {
-        console.error('❌ Error cargando contador de notificaciones:', error);
-
-        const badge = document.getElementById('notificationBadge');
-        if (badge) {
-            badge.style.display = 'none';
-        }
-
-        return 0;
-    }
-}
-
-// 🆕 ACTUALIZAR CONTADOR PERIÓDICAMENTE
-function iniciarActualizacionContador() {
-    console.log('🔄 Iniciando actualización automática de contador...');
-
-    // Cargar inicialmente
-    cargarContadorNotificaciones();
-
-    // Actualizar cada 30 segundos
-    setInterval(() => {
-        cargarContadorNotificaciones();
-    }, 30000); // 30 segundos
-}
-
 // 🆕 FUNCIÓN PARA CARGAR ESTADÍSTICAS DEL PERFIL
 async function cargarEstadisticasPerfil() {
     console.log('📊 Cargando estadísticas del perfil...');
@@ -261,6 +199,7 @@ async function cargarEstadisticasPerfil() {
             views: '...'
         });
 
+        // 🚨 URL SIMPLE - sin parámetros extra
         const resp = await fetch('../../controllers/usuario_controlador.php?action=obtener_estadisticas', {
             method: 'GET',
             credentials: 'include'
@@ -281,6 +220,7 @@ async function cargarEstadisticasPerfil() {
 
     } catch (error) {
         console.error('❌ Error cargando estadísticas:', error);
+        // Mostrar valores por defecto
         actualizarEstadisticasUI({
             reports: '0',
             likes: '0',
@@ -302,6 +242,8 @@ function actualizarEstadisticasUI(estadisticas) {
     for (const [key, element] of Object.entries(elementos)) {
         if (element && estadisticas[key] !== undefined) {
             element.textContent = estadisticas[key];
+
+            // Animación simple al actualizar
             element.style.transform = 'scale(1.1)';
             setTimeout(() => {
                 element.style.transform = 'scale(1)';
@@ -338,24 +280,30 @@ async function verificarSesion() {
 function cargarImagenSegura(elemento, url) {
     if (!elemento) return;
 
+    // Si no hay URL o está vacía, usar imagen por defecto
     if (!url || url === '' || url === 'null') {
         elemento.src = window.location.origin + '/imagenes/default-avatar.png';
         return;
     }
 
+    // Si la URL ya es absoluta, usarla directamente
     if (url.startsWith('http')) {
         elemento.src = url;
     } else {
+        // Si es relativa, convertir a absoluta
         const baseUrl = window.location.origin;
         elemento.src = baseUrl + (url.startsWith('/') ? url : '/' + url);
     }
 
+    // Manejar errores de carga de manera más robusta
     elemento.onerror = function() {
         console.warn('❌ Error cargando imagen:', this.src);
+        // Usar imagen por defecto absoluta
         this.src = window.location.origin + '/imagenes/default-avatar.png';
-        this.onerror = null;
+        this.onerror = null; // Prevenir bucles infinitos
     };
 
+    // Verificar si la imagen carga correctamente
     elemento.onload = function() {
         console.log('✅ Imagen cargada correctamente:', this.src);
     };
@@ -400,9 +348,11 @@ async function cargarFeedSuave() {
             credentials: 'include'
         });
 
+        // MANEJO SEGURO DE ERRORES - SIN REDIRECCIONES
         if (!resp.ok) {
             if (resp.status === 401) {
                 console.warn('⚠️ Posible problema de sesión al cargar feed');
+                // No redirigir, solo mostrar error
                 throw new Error('Problema de autenticación');
             }
             throw new Error(`Error HTTP: ${resp.status}`);
@@ -439,6 +389,7 @@ async function cargarFeedSuave() {
                 }
             });
 
+            // 🆕 APLICAR CARGA SEGURA A TODOS LOS AVATARES
             aplicarCargaSeguraAvatares();
         } else {
             feedView.innerHTML = '';
@@ -459,6 +410,7 @@ async function cargarFeedSuave() {
     } catch (err) {
         console.error('❌ Error cargando feed:', err);
 
+        // MOSTRAR ERROR SIN REDIRIGIR
         if (postsContainer && loadingPosts && noPosts) {
             mostrarElemento(loadingPosts, false);
             mostrarElemento(noPosts, true);
@@ -491,11 +443,6 @@ async function cargarNotificacionesSuave() {
 
         const data = await resp.json();
 
-        // 🆕 ACTUALIZAR CONTADOR DESPUÉS DE CARGAR NOTIFICACIONES
-        setTimeout(() => {
-            cargarContadorNotificaciones();
-        }, 500);
-
         if (!Array.isArray(data) || data.length === 0) {
             notificationsView.innerHTML = `
                 <div class="no-notifications">
@@ -511,6 +458,7 @@ async function cargarNotificacionesSuave() {
             const div = document.createElement('div');
             div.className = `notification ${n.leida ? 'leida' : 'no-leida'}`;
 
+            // Icono según el tipo de notificación
             let icono = '🔔';
             if (n.tipo === 'like') icono = '👍';
             else if (n.tipo === 'comentario') icono = '💬';
@@ -535,6 +483,7 @@ async function cargarNotificacionesSuave() {
             notificationsView.appendChild(div);
         });
 
+        // Botón para marcar todas como leídas
         const markAllBtn = document.createElement('button');
         markAllBtn.className = 'btn btn-primary';
         markAllBtn.style.margin = '15px auto';
@@ -558,8 +507,7 @@ async function marcarTodasLeidas() {
 
         const result = await resp.json();
         if (result.success) {
-            // 🆕 ACTUALIZAR CONTADOR DESPUÉS DE MARCAR TODAS COMO LEÍDAS
-            cargarContadorNotificaciones();
+            // Recargar notificaciones
             cargarNotificacionesSuave();
         }
     } catch (error) {
@@ -618,6 +566,7 @@ window.toggleLike = async function(id_reporte, btn) {
                 likeCount.textContent = Math.max(0, currentCount - 1);
             }
 
+            // ✅ ACTUALIZAR CONTADOR REAL DESDE EL SERVIDOR
             const postElement = btn.closest('.post');
             if (postElement) {
                 await cargarLikesPost(id_reporte, postElement);
@@ -634,6 +583,7 @@ window.toggleLike = async function(id_reporte, btn) {
 // Función para crear elemento de post
 function crearPostElement(reporte) {
     try {
+        // 🆕 MEJOR MANEJO DE FOTO DE PERFIL
         let avatarUrl = '/imagenes/default-avatar.png';
 
         if (reporte.foto_perfil &&
@@ -641,15 +591,18 @@ function crearPostElement(reporte) {
             reporte.foto_perfil !== 'null' &&
             reporte.foto_perfil !== null) {
 
+            // Si la URL es relativa, hacerla absoluta
             if (reporte.foto_perfil.startsWith('/')) {
                 avatarUrl = window.location.origin + reporte.foto_perfil;
             } else if (reporte.foto_perfil.startsWith('http')) {
                 avatarUrl = reporte.foto_perfil;
             } else {
+                // Si es una ruta relativa sin slash inicial
                 avatarUrl = window.location.origin + '/' + reporte.foto_perfil;
             }
         }
 
+        // 🆕 USAR NOMBRE REAL O CORREO
         const nombreUsuario = (reporte.nombres && reporte.apellidos)
             ? `${reporte.nombres} ${reporte.apellidos}`.trim()
             : (reporte.usuario ? reporte.usuario.split('@')[0] : 'Usuario');
@@ -717,6 +670,7 @@ function crearPostElement(reporte) {
             </div>
         `;
 
+        // Agregar event listeners
         const likeBtn = div.querySelector('.like-btn');
         const commentBtn = div.querySelector('.comment-btn');
         const viewMapBtn = div.querySelector('.view-map-btn');
@@ -741,6 +695,7 @@ function crearPostElement(reporte) {
             streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
         }
 
+        // Cargar datos de likes y comentarios después de crear el elemento
         setTimeout(() => {
             cargarLikesPost(reporte.id_reporte, div);
             cargarComentariosPost(reporte.id_reporte, div);
@@ -796,7 +751,7 @@ async function cargarComentariosPost(id_reporte, postElement) {
 async function verificarLikeUsuario(id_reporte, postElement) {
     try {
         const id_usuario = await obtenerUsuarioId();
-        const formData = new FormData();
+        const formData = new FormData(); // ✅ CORREGIDO: FormData en lugar de FormdData
         formData.append('id_reporte', id_reporte);
         formData.append('id_usuario', id_usuario);
 
@@ -977,12 +932,10 @@ window.marcarLeida = async function(id, btn) {
         if (r.success) {
             btn.textContent = 'Leída';
             btn.disabled = true;
-
-            // 🆕 ACTUALIZAR CONTADOR DESPUÉS DE MARCAR COMO LEÍDA
-            cargarContadorNotificaciones();
         }
     } catch (e) {
         console.error(e);
+        alert('Error al marcar como leída');
     }
 }
 
