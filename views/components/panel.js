@@ -528,20 +528,24 @@ async function marcarTodasLeidas() {
             // Función para crear elemento de post
             function crearPostElement(reporte) {
     try {
-        // 🆕 OBTENER FOTO DE PERFIL O USAR POR DEFECTO
-        const avatar = obtenerFotoPerfil(reporte.foto_perfil);
+        // 🆕 USAR FOTO DE PERFIL REAL O POR DEFECTO
+        const avatar = reporte.foto_perfil && reporte.foto_perfil !== ''
+            ? reporte.foto_perfil
+            : '/imagenes/default-avatar.png';
+
+        // 🆕 USAR NOMBRE REAL O CORREO
+        const nombreUsuario = (reporte.nombres && reporte.apellidos)
+            ? `${reporte.nombres} ${reporte.apellidos}`.trim()
+            : (reporte.usuario ? reporte.usuario.split('@')[0] : 'Usuario');
+
         const timeText = tiempoRelativo(new Date(reporte.fecha_reporte));
         const descripcionCorta = reporte.descripcion && reporte.descripcion.length > 150 ?
             reporte.descripcion.substring(0, 150) + '...' : reporte.descripcion;
-
-        // 🆕 OBTENER NOMBRE COMPLETO O CORREO
-        const nombreUsuario = obtenerNombreUsuario(reporte);
 
         const div = document.createElement('div');
         div.className = 'post';
         div.setAttribute('data-post-id', reporte.id_reporte);
 
-        // 🎯 ESTRUCTURA HTML DEL REPORTE CON FOTO DE PERFIL
         div.innerHTML = `
             <div class="post-header">
                 <img src="${avatar}" class="avatar" alt="${nombreUsuario}"
@@ -597,7 +601,7 @@ async function marcarTodasLeidas() {
             </div>
         `;
 
-        // 🎯 AGREGAR INTERACTIVIDAD (código igual)
+        // Agregar event listeners (código igual)
         const likeBtn = div.querySelector('.like-btn');
         const commentBtn = div.querySelector('.comment-btn');
         const viewMapBtn = div.querySelector('.view-map-btn');
@@ -622,7 +626,7 @@ async function marcarTodasLeidas() {
             streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
         }
 
-        // Cargar datos adicionales
+        // Cargar datos de likes y comentarios después de crear el elemento
         setTimeout(() => {
             cargarLikesPost(reporte.id_reporte, div);
             cargarComentariosPost(reporte.id_reporte, div);
@@ -636,39 +640,7 @@ async function marcarTodasLeidas() {
         return null;
     }
 }
-function obtenerFotoPerfil(fotoPerfil) {
-    // Si no hay foto o está vacía, usar por defecto
-    if (!fotoPerfil || fotoPerfil === '' || fotoPerfil === 'null') {
-        return window.location.origin + '/imagenes/default-avatar.png';
-    }
 
-    // Si la foto ya es una URL completa, usarla directamente
-    if (fotoPerfil.startsWith('http')) {
-        return fotoPerfil;
-    }
-
-    // Si es una ruta relativa, convertir a absoluta
-    const baseUrl = window.location.origin;
-    return baseUrl + (fotoPerfil.startsWith('/') ? fotoPerfil : '/' + fotoPerfil);
-}
-function obtenerNombreUsuario(reporte) {
-    // Intentar usar nombres y apellidos primero
-    if (reporte.nombres && reporte.apellidos) {
-        const nombreCompleto = `${reporte.nombres} ${reporte.apellidos}`.trim();
-        if (nombreCompleto) {
-            return nombreCompleto;
-        }
-    }
-
-    // Si no hay nombres, usar el correo
-    if (reporte.usuario) {
-        // Extraer solo la parte antes del @ del correo
-        return reporte.usuario.split('@')[0];
-    }
-
-    // Fallback
-    return 'Usuario';
-}
             // Función para cargar likes de un post
             async function cargarLikesPost(id_reporte, postElement) {
                 try {
