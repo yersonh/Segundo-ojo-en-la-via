@@ -526,7 +526,8 @@ async function marcarTodasLeidas() {
             }
 
             // Función para crear elemento de post
-            function crearPostElement(reporte) {
+            f// Función para crear elemento de post - MODIFICADA PARA USAR FOTO DE PERFIL
+function crearPostElement(reporte) {
     try {
         // 🆕 USAR FOTO DE PERFIL REAL O POR DEFECTO
         const avatar = reporte.foto_perfil && reporte.foto_perfil !== ''
@@ -601,7 +602,7 @@ async function marcarTodasLeidas() {
             </div>
         `;
 
-        // Agregar event listeners (código igual)
+        // El resto del código (event listeners) se mantiene igual
         const likeBtn = div.querySelector('.like-btn');
         const commentBtn = div.querySelector('.comment-btn');
         const viewMapBtn = div.querySelector('.view-map-btn');
