@@ -17,49 +17,79 @@ try {
     switch ($action) {
 
         // Listar los reportes
-        case 'listar':
-    // Primero obtener los reportes
-    $query = "
-        SELECT
-            r.id_reporte,
-            t.nombre AS tipo_incidente,
-            r.descripcion,
-            r.latitud,
-            r.longitud,
-            r.fecha_reporte,
-            u.correo AS usuario,
-            r.estado
-            p.foto_perfil,
-            p.nombres,
-            p.apellidos
-        FROM reporte r
-        INNER JOIN tipo_incidente t ON r.id_tipo_incidente = t.id_tipo_incidente
-        INNER JOIN usuario u ON r.id_usuario = u.id_usuario
-        INNER JOIN persona p ON u.id_persona = p.id_persona
-        ORDER BY r.fecha_reporte DESC
-    ";
+       case 'listar':
+    try {
+        error_log("📋 Ejecutando acción: listar reportes");
 
-    $stmt = $db->query($query);
-    $reportes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // 🎯 CONSULTA CORREGIDA CON MANEJO DE ERRORES
+        $query = "
+            SELECT
+                r.id_reporte,
+                t.nombre AS tipo_incidente,
+                r.descripcion,
+                r.latitud,
+                r.longitud,
+                r.fecha_reporte,
+                u.correo AS usuario,
+                r.estado,
+                p.foto_perfil,
+                p.nombres,
+                p.apellidos
+            FROM reporte r
+            INNER JOIN tipo_incidente t ON r.id_tipo_incidente = t.id_tipo_incidente
+            INNER JOIN usuario u ON r.id_usuario = u.id_usuario
+            INNER JOIN persona p ON u.id_persona = p.id_persona
+            ORDER BY r.fecha_reporte DESC
+        ";
 
-    // Obtener TODAS las imágenes para cada reporte
-    foreach ($reportes as &$reporte) {
-        $queryImg = "SELECT url_imagen FROM imagen_reporte WHERE id_reporte = :id_reporte ORDER BY id_imagen";
-        $stmtImg = $db->prepare($queryImg);
-        $stmtImg->execute([':id_reporte' => $reporte['id_reporte']]);
-        $imagenes = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
+        error_log("🔍 Consulta SQL: " . $query);
 
-        $reporte['imagenes'] = array_column($imagenes, 'url_imagen');
+        $stmt = $db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . implode(", ", $db->errorInfo()));
+        }
+
+        $stmt->execute();
+        $reportes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        error_log("📊 Reportes encontrados: " . count($reportes));
+
+        // Obtener TODAS las imágenes para cada reporte
+        foreach ($reportes as &$reporte) {
+            $queryImg = "SELECT url_imagen FROM imagen_reporte WHERE id_reporte = :id_reporte ORDER BY id_imagen";
+            $stmtImg = $db->prepare($queryImg);
+            $stmtImg->execute([':id_reporte' => $reporte['id_reporte']]);
+            $imagenes = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
+
+            $reporte['imagenes'] = array_column($imagenes, 'url_imagen');
+        }
+        unset($reporte);
+
+        // Limpiar output accidental
+        $unexpected_output = ob_get_contents();
+        if (!empty($unexpected_output)) {
+            error_log("⚠️ Output inesperado en listar: " . $unexpected_output);
+            ob_clean();
+        }
+
+        echo json_encode($reportes);
+
+    } catch (Exception $e) {
+        error_log("❌ Error en listar reportes: " . $e->getMessage());
+
+        // Limpiar output accidental
+        $unexpected_output = ob_get_contents();
+        if (!empty($unexpected_output)) {
+            ob_clean();
+        }
+
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "error" => "Error al cargar reportes",
+            "debug" => $e->getMessage()
+        ]);
     }
-    unset($reporte);
-
-    $unexpected_output = ob_get_contents();
-    if (!empty($unexpected_output)) {
-        error_log("⚠️ Output inesperado en listar: " . $unexpected_output);
-        ob_clean();
-    }
-
-    echo json_encode($reportes);
     break;
 
 case 'registrar':
