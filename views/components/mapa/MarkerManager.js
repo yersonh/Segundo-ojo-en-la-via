@@ -10,7 +10,7 @@ export class MarkerManager {
         this.cache = new CacheManager();
         this.popupManager = null;
     }
-    
+
     inicializar() {
         try {
             this.markerCluster = L.markerClusterGroup(Config.clusters);
@@ -21,24 +21,24 @@ export class MarkerManager {
             throw error;
         }
     }
-    
+
     setPopupManager(popupManager) {
         this.popupManager = popupManager;
     }
-    
+
     async cargarReportes() {
         try {
             this.limpiarMarcadores();
-            
+
             const reportes = await this.cache.obtenerConCache(
                 'reportes',
                 () => this._fetchReportes()
             );
-            
+
             reportes.forEach((reporte, index) => {
                 this.agregarReporte(reporte);
             });
-            
+
             this._ajustarVista();
             return reportes;
         } catch (error) {
@@ -46,60 +46,94 @@ export class MarkerManager {
             return [];
         }
     }
-    
-    
+
     async _fetchReportes() {
-    try {
-        const resp = await fetch('../../controllers/reportecontrolador.php?action=listar');
-        if (!resp.ok) {
-            throw new Error(`HTTP error! status: ${resp.status}`);
+        try {
+            const resp = await fetch('../../controllers/reportecontrolador.php?action=listar');
+            if (!resp.ok) {
+                throw new Error(`HTTP error! status: ${resp.status}`);
+            }
+            const data = await resp.json();
+
+            // 🆕 DEBUG TEMPORAL - Ver estructura de datos
+            console.log('🔍 Estructura del primer reporte:', data[0] ? {
+                tiene_latitud: !!data[0].latitud,
+                tiene_longitud: !!data[0].longitud,
+                tiene_tipo_incidente: !!data[0].tipo_incidente,
+                tiene_estado: !!data[0].estado,
+                tiene_id_reporte: !!data[0].id_reporte,
+                campos_extra: Object.keys(data[0]).filter(key =>
+                    !['latitud', 'longitud', 'tipo_incidente', 'estado', 'id_reporte'].includes(key)
+                )
+            } : 'No hay reportes');
+
+            console.log('📊 Reportes cargados:', data.length);
+            return data;
+        } catch (error) {
+            console.error('Error al cargar reportes:', error);
+            throw error;
         }
-        const data = await resp.json();
-        console.log('📊 Reportes cargados:', data.length);
-        return data;
-    } catch (error) {
-        console.error('Error al cargar reportes:', error);
-        throw error;
     }
-}
-    
+
     agregarReporte(reporte) {
-    try {
-        // ✅ CORRECCIÓN: Cambiar _crearIconoPersonalizado por crearIconoPersonalizado
-        const icono = this.crearIconoPersonalizado(reporte.tipo_incidente, reporte.estado);
-        
-        // 🆕 AGREGAR ESTA LÍNEA - Asignar reportId al marcador
-        const marker = L.marker([reporte.latitud, reporte.longitud], { 
-            icon: icono,
-            reportId: reporte.id_reporte  // ← ESTA ES LA LÍNEA CLAVE
-        });
-        
-        if (this.popupManager) {
-            marker.bindPopup(this.popupManager.crearPopupContent(reporte));
+        try {
+            // 🆕 VALIDACIÓN DE CAMPOS REQUERIDOS
+            if (!reporte.latitud || !reporte.longitud) {
+                console.warn('❌ Reporte sin coordenadas:', reporte.id_reporte);
+                return null;
+            }
+
+            // Convertir a números si son strings
+            const lat = typeof reporte.latitud === 'string' ? parseFloat(reporte.latitud) : reporte.latitud;
+            const lng = typeof reporte.longitud === 'string' ? parseFloat(reporte.longitud) : reporte.longitud;
+
+            // Validar que las coordenadas sean números válidos
+            if (isNaN(lat) || isNaN(lng)) {
+                console.warn('❌ Coordenadas inválidas:', reporte.id_reporte, reporte.latitud, reporte.longitud);
+                return null;
+            }
+
+            // 🆕 VALORES POR DEFECTO PARA CAMPOS OPCIONALES
+            const tipoIncidente = reporte.tipo_incidente || 'Desconocido';
+            const estado = reporte.estado || 'pendiente';
+            const reportId = reporte.id_reporte || `temp-${Date.now()}`;
+
+            const icono = this.crearIconoPersonalizado(tipoIncidente, estado);
+
+            const marker = L.marker([lat, lng], {
+                icon: icono,
+                reportId: reportId
+            });
+
+            if (this.popupManager) {
+                marker.bindPopup(this.popupManager.crearPopupContent(reporte));
+            }
+
+            // Efectos interactivos
+            marker.on('mouseover', function() {
+                this.openPopup();
+            });
+
+            this.markerCluster.addLayer(marker);
+            this.markers.push({
+                marker: marker,
+                data: reporte
+            });
+
+            console.log('✅ Marcador agregado:', reportId, 'en', lat, lng);
+
+            return marker;
+        } catch (error) {
+            console.error(`❌ Error al agregar reporte ${reporte.id_reporte}:`, error);
+            console.log('📋 Datos del reporte problemático:', reporte);
+            return null;
         }
-        
-        // Efectos interactivos
-        marker.on('mouseover', function() {
-            this.openPopup();
-        });
-        
-        this.markerCluster.addLayer(marker);
-        this.markers.push({
-            marker: marker,
-            data: reporte
-        });
-        
-        return marker;
-    } catch (error) {
-        ErrorHandler.mostrarError(`Error al agregar reporte ${reporte.id_reporte}`, error);
-        return null;
     }
-}
-    
+
     crearIconoPersonalizado(tipoIncidente, estado) {
         const emoji = TipoIconos[tipoIncidente] || TipoIconos.default;
         const color = Config.icons.estado[estado] || Config.icons.defaultColor;
-        
+
         return L.divIcon({
             className: 'custom-marker',
             html: `
@@ -125,69 +159,68 @@ export class MarkerManager {
             popupAnchor: [0, -45]
         });
     }
-    
-    agregarMarkerOffline(reporteOffline) {
-    console.log('📍 Agregando marker offline:', reporteOffline.id);
-    
-    // 🆕 VERIFICAR SI EL MARKER YA EXISTE
-    const markerExistente = this.markers.find(m => 
-        m.options && m.options.customId === `offline-${reporteOffline.id}`
-    );
-    
-    if (markerExistente) {
-        console.log('⚠️ Marker offline ya existe, no se duplicará:', reporteOffline.id);
-        return;
-    }
-    
-    // ✅ CORRECCIÓN: Cambiar _crearIconoPersonalizado por crearIconoPersonalizado
-    const marker = L.marker([reporteOffline.latitud, reporteOffline.longitud], {
-        icon: this.crearIconoPersonalizado(reporteOffline.tipo_incidente, true), // true para offline
-        customId: `offline-${reporteOffline.id}` // ID único para evitar duplicados
-    });
-    
-    // Configurar popup
-    const popupContent = this.crearPopupOffline(reporteOffline);
-    marker.bindPopup(popupContent);
-    
-    // Agregar al mapa y al array
-    marker.addTo(this.mapa);
-    this.markers.push(marker);
-    
-    console.log('✅ Marker offline agregado:', reporteOffline.id);
-}
 
-crearPopupOffline(reporte) {
-    return `
-        <div class="popup-offline">
-            <div class="popup-header" style="background: #f59e0b; color: white; padding: 8px 12px; border-radius: 4px 4px 0 0;">
-                <strong>📶 Reporte Offline</strong>
-            </div>
-            <div class="popup-content" style="padding: 12px;">
-                <p><strong>Tipo:</strong> ${this.obtenerNombreTipoIncidente(reporte.tipo_incidente)}</p>
-                <p><strong>Descripción:</strong> ${reporte.descripcion}</p>
-                <p><strong>Fecha:</strong> ${new Date(reporte.fecha).toLocaleString()}</p>
-                <p><strong>Estado:</strong> <span style="color: #f59e0b; font-weight: bold;">⏳ Pendiente de envío</span></p>
-                <div style="background: #fef3c7; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 12px;">
-                    📍 Este reporte se enviará automáticamente cuando recuperes conexión
+    agregarMarkerOffline(reporteOffline) {
+        console.log('📍 Agregando marker offline:', reporteOffline.id);
+
+        // 🆕 VERIFICAR SI EL MARKER YA EXISTE
+        const markerExistente = this.markers.find(m =>
+            m.options && m.options.customId === `offline-${reporteOffline.id}`
+        );
+
+        if (markerExistente) {
+            console.log('⚠️ Marker offline ya existe, no se duplicará:', reporteOffline.id);
+            return;
+        }
+
+        const marker = L.marker([reporteOffline.latitud, reporteOffline.longitud], {
+            icon: this.crearIconoPersonalizado(reporteOffline.tipo_incidente, true), // true para offline
+            customId: `offline-${reporteOffline.id}` // ID único para evitar duplicados
+        });
+
+        // Configurar popup
+        const popupContent = this.crearPopupOffline(reporteOffline);
+        marker.bindPopup(popupContent);
+
+        // Agregar al mapa y al array
+        marker.addTo(this.mapa);
+        this.markers.push(marker);
+
+        console.log('✅ Marker offline agregado:', reporteOffline.id);
+    }
+
+    crearPopupOffline(reporte) {
+        return `
+            <div class="popup-offline">
+                <div class="popup-header" style="background: #f59e0b; color: white; padding: 8px 12px; border-radius: 4px 4px 0 0;">
+                    <strong>📶 Reporte Offline</strong>
+                </div>
+                <div class="popup-content" style="padding: 12px;">
+                    <p><strong>Tipo:</strong> ${this.obtenerNombreTipoIncidente(reporte.tipo_incidente)}</p>
+                    <p><strong>Descripción:</strong> ${reporte.descripcion}</p>
+                    <p><strong>Fecha:</strong> ${new Date(reporte.fecha).toLocaleString()}</p>
+                    <p><strong>Estado:</strong> <span style="color: #f59e0b; font-weight: bold;">⏳ Pendiente de envío</span></p>
+                    <div style="background: #fef3c7; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 12px;">
+                        📍 Este reporte se enviará automáticamente cuando recuperes conexión
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-}
-    
-limpiarMarkersOffline() {
-    console.log('🧹 Limpiando markers offline...');
-    
-    this.markers = this.markers.filter(marker => {
-        if (marker.options && marker.options.customId && marker.options.customId.startsWith('offline-')) {
-            this.mapa.removeLayer(marker);
-            return false; // Eliminar del array
-        }
-        return true; // Mantener en el array
-    });
-    
-    console.log('✅ Markers offline limpiados');
-}
+        `;
+    }
+
+    limpiarMarkersOffline() {
+        console.log('🧹 Limpiando markers offline...');
+
+        this.markers = this.markers.filter(marker => {
+            if (marker.options && marker.options.customId && marker.options.customId.startsWith('offline-')) {
+                this.mapa.removeLayer(marker);
+                return false; // Eliminar del array
+            }
+            return true; // Mantener en el array
+        });
+
+        console.log('✅ Markers offline limpiados');
+    }
 
     _ajustarVista() {
         if (this.markers.length > 0) {
@@ -195,13 +228,13 @@ limpiarMarkersOffline() {
             this.mapa.getMap().fitBounds(group.getBounds().pad(0.1));
         }
     }
-    
+
     limpiarMarcadores() {
         this.markerCluster.clearLayers();
         this.markers = [];
         this.cache.clear();
     }
-    
+
     filtrarMarcadores(filtros) {
         this.markers.forEach(({ marker, data }) => {
             const visible = this._cumpleFiltros(data, filtros);
@@ -209,12 +242,12 @@ limpiarMarkersOffline() {
             marker.setZIndexOffset(visible ? 1000 : 0);
         });
     }
-    
+
     _cumpleFiltros(reporte, filtros) {
         // Implementar lógica de filtrado según necesidades
         return true;
     }
-    
+
     obtenerMarcadores() {
         return this.markers.map(m => m.data);
     }
