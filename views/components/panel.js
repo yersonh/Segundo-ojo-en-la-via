@@ -1,193 +1,272 @@
-            // Panel.js - Versión con carga de estadísticas en perfil
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('🚀 Inicializando panel...');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando panel...');
 
-                setTimeout(() => {
-                    try {
-                        const navItems = document.querySelectorAll('.nav-item');
-                        const bottomNav = document.querySelector('.bottom-nav');
-                        const mainContent = document.querySelector('.main');
-                        const navActivationZone = document.createElement('div');
+    // 🔥 SOLUCIÓN 2: DELEGACIÓN DE EVENTOS PARA LIKES
+    document.addEventListener('click', function(e) {
+        // Verificar si el click fue en un botón de like
+        if (e.target.closest('.like-btn')) {
+            const likeBtn = e.target.closest('.like-btn');
+            const reportId = likeBtn.getAttribute('data-report-id');
 
-                        // Crear zona de activación
-                        navActivationZone.className = 'nav-activation-zone';
-                        document.body.appendChild(navActivationZone);
+            if (reportId && typeof window.toggleLike === 'function') {
+                e.preventDefault();
+                toggleLike(reportId, likeBtn);
+            }
+        }
+    });
 
-                        // Estado de la navegación
-                        let isNavHidden = false;
-                        let hideTimeout = null;
-                        let lastScrollTop = 0;
-                        let scrollDirection = 'down';
+    setTimeout(() => {
+        try {
+            const navItems = document.querySelectorAll('.nav-item');
+            const bottomNav = document.querySelector('.bottom-nav');
+            const mainContent = document.querySelector('.main');
+            const navActivationZone = document.createElement('div');
 
-                        // Inicializar navegación
-                        navItems.forEach(i => i.addEventListener('click', onNavClick));
-                        initAutoHideNav();
+            // Crear zona de activación
+            navActivationZone.className = 'nav-activation-zone';
+            document.body.appendChild(navActivationZone);
 
-                        // Cargar datos iniciales del feed
-                        cargarFeedSuave();
+            // Estado de la navegación
+            let isNavHidden = false;
+            let hideTimeout = null;
+            let lastScrollTop = 0;
+            let scrollDirection = 'down';
 
-                        console.log('✅ Panel inicializado correctamente');
+            // Inicializar navegación
+            navItems.forEach(i => i.addEventListener('click', onNavClick));
+            initAutoHideNav();
 
-                        function initAutoHideNav() {
-                            hideTimeout = setTimeout(hideNavigation, 3000);
-                            navActivationZone.addEventListener('mouseenter', showNavigation);
-                            navActivationZone.addEventListener('touchstart', showNavigation);
-                            bottomNav.addEventListener('mouseenter', showNavigation);
-                            bottomNav.addEventListener('touchstart', showNavigation);
+            // Cargar datos iniciales del feed
+            cargarFeedSuave();
 
-                            bottomNav.addEventListener('mouseleave', () => {
-                                if (!isUserInteracting()) {
-                                    hideTimeout = setTimeout(hideNavigation, 1000);
-                                }
-                            });
+            console.log('✅ Panel inicializado correctamente');
 
-                            if (mainContent) {
-                                mainContent.addEventListener('scroll', handleScroll);
-                            }
+            function initAutoHideNav() {
+                hideTimeout = setTimeout(hideNavigation, 3000);
+                navActivationZone.addEventListener('mouseenter', showNavigation);
+                navActivationZone.addEventListener('touchstart', showNavigation);
+                bottomNav.addEventListener('mouseenter', showNavigation);
+                bottomNav.addEventListener('touchstart', showNavigation);
 
-                            document.addEventListener('mousemove', resetHideTimer);
-                            document.addEventListener('touchstart', resetHideTimer);
-                            document.addEventListener('click', resetHideTimer);
-                        }
-
-                        function handleScroll() {
-                            const scrollTop = mainContent.scrollTop;
-                            if (scrollTop > lastScrollTop) {
-                                scrollDirection = 'down';
-                            } else {
-                                scrollDirection = 'up';
-                            }
-                            lastScrollTop = scrollTop;
-
-                            if (scrollDirection === 'down' && !isNavHidden) {
-                                hideNavigation();
-                            } else if (scrollDirection === 'up' && isNavHidden) {
-                                showNavigation();
-                            }
-
-                            resetHideTimer();
-                        }
-
-                        function resetHideTimer() {
-                            clearTimeout(hideTimeout);
-                            if (!isNavHidden) {
-                                hideTimeout = setTimeout(hideNavigation, 3000);
-                            }
-                        }
-
-                        function actualizarPosicionBoton() {
-                            const mapButton = document.querySelector('.map-floating-button');
-                            const bottomNav = document.querySelector('.bottom-nav');
-
-                            if (mapButton && bottomNav) {
-                                if (bottomNav.classList.contains('hidden')) {
-                                    mapButton.style.bottom = '20px';
-                                } else {
-                                    mapButton.style.bottom = '80px';
-                                }
-                            }
-                        }
-
-                        function hideNavigation() {
-                            if (!isNavHidden && bottomNav) {
-                                bottomNav.classList.remove('visible');
-                                bottomNav.classList.add('hidden');
-                                navActivationZone.classList.add('active');
-                                if (mainContent) {
-                                    mainContent.classList.remove('with-visible-nav');
-                                    mainContent.classList.add('with-hidden-nav');
-                                }
-                                isNavHidden = true;
-                                actualizarPosicionBoton();
-                            }
-                        }
-
-                        function showNavigation() {
-                            clearTimeout(hideTimeout);
-                            if (isNavHidden && bottomNav) {
-                                bottomNav.classList.remove('hidden');
-                                bottomNav.classList.add('visible');
-                                navActivationZone.classList.remove('active');
-                                if (mainContent) {
-                                    mainContent.classList.remove('with-hidden-nav');
-                                    mainContent.classList.add('with-visible-nav');
-                                }
-                                isNavHidden = false;
-                                actualizarPosicionBoton();
-                                hideTimeout = setTimeout(hideNavigation, 3000);
-                            }
-                        }
-
-                        function isUserInteracting() {
-                            return bottomNav.matches(':hover') || navActivationZone.matches(':hover');
-                        }
-
-                        async function onNavClick(e) {
-                            navItems.forEach(n => n.classList.remove('active'));
-                            e.currentTarget.classList.add('active');
-
-                            const target = e.currentTarget.getAttribute('data-target');
-                            document.querySelectorAll('#mainContent > div').forEach(d => {
-                                d.style.display = 'none';
-                            });
-
-                            const targetElement = document.getElementById(target);
-                            if (targetElement) {
-                                targetElement.style.display = 'block';
-
-                                // CARGAR CONTENIDO ESPECÍFICO DE CADA VISTA
-                                if (target === 'feedView') {
-                                    cargarFeedSuave();
-                                } else if (target === 'notificationsView') {
-                                    cargarNotificacionesSuave();
-                                } else if (target === 'profileView') {
-                                    // 🆕 CARGAR ESTADÍSTICAS DEL PERFIL
-                                    cargarEstadisticasPerfil();
-                                }
-
-                                const mapButton = document.querySelector('.map-floating-button');
-
-                                if (target === 'mapView') {
-                                    targetElement.style.position = 'fixed';
-                                    targetElement.style.top = '44px';
-                                    targetElement.style.left = '0';
-                                    targetElement.style.right = '0';
-                                    targetElement.style.bottom = '0';
-                                    targetElement.style.width = '100%';
-                                    targetElement.style.height = 'calc(100vh - 44px)';
-                                    targetElement.style.zIndex = '998';
-
-                                    if (mapButton) {
-                                        mapButton.style.display = 'flex';
-                                        mapButton.classList.add('visible');
-                                        mapButton.classList.remove('hidden');
-                                    }
-
-                                    const iframe = targetElement.querySelector('iframe');
-                                    if (iframe) {
-                                        iframe.style.width = '100%';
-                                        iframe.style.height = '100%';
-                                    }
-                                } else {
-                                    if (mapButton) {
-                                        mapButton.style.display = 'none';
-                                        mapButton.classList.remove('visible');
-                                        mapButton.classList.add('hidden');
-                                    }
-                                }
-                            }
-
-                            showNavigation();
-                        }
-
-                    } catch (error) {
-                        console.error('❌ Error durante la inicialización:', error);
+                bottomNav.addEventListener('mouseleave', () => {
+                    if (!isUserInteracting()) {
+                        hideTimeout = setTimeout(hideNavigation, 1000);
                     }
-                }, 100);
-            });
+                });
 
-            // 🆕 FUNCIÓN PARA CARGAR ESTADÍSTICAS DEL PERFIL
-    async function cargarEstadisticasPerfil() {
+                if (mainContent) {
+                    mainContent.addEventListener('scroll', handleScroll);
+                }
+
+                document.addEventListener('mousemove', resetHideTimer);
+                document.addEventListener('touchstart', resetHideTimer);
+                document.addEventListener('click', resetHideTimer);
+            }
+
+            function handleScroll() {
+                const scrollTop = mainContent.scrollTop;
+                if (scrollTop > lastScrollTop) {
+                    scrollDirection = 'down';
+                } else {
+                    scrollDirection = 'up';
+                }
+                lastScrollTop = scrollTop;
+
+                if (scrollDirection === 'down' && !isNavHidden) {
+                    hideNavigation();
+                } else if (scrollDirection === 'up' && isNavHidden) {
+                    showNavigation();
+                }
+
+                resetHideTimer();
+            }
+
+            function resetHideTimer() {
+                clearTimeout(hideTimeout);
+                if (!isNavHidden) {
+                    hideTimeout = setTimeout(hideNavigation, 3000);
+                }
+            }
+
+            function actualizarPosicionBoton() {
+                const mapButton = document.querySelector('.map-floating-button');
+                const bottomNav = document.querySelector('.bottom-nav');
+
+                if (mapButton && bottomNav) {
+                    if (bottomNav.classList.contains('hidden')) {
+                        mapButton.style.bottom = '20px';
+                    } else {
+                        mapButton.style.bottom = '80px';
+                    }
+                }
+            }
+
+            function hideNavigation() {
+                if (!isNavHidden && bottomNav) {
+                    bottomNav.classList.remove('visible');
+                    bottomNav.classList.add('hidden');
+                    navActivationZone.classList.add('active');
+                    if (mainContent) {
+                        mainContent.classList.remove('with-visible-nav');
+                        mainContent.classList.add('with-hidden-nav');
+                    }
+                    isNavHidden = true;
+                    actualizarPosicionBoton();
+                }
+            }
+
+            function showNavigation() {
+                clearTimeout(hideTimeout);
+                if (isNavHidden && bottomNav) {
+                    bottomNav.classList.remove('hidden');
+                    bottomNav.classList.add('visible');
+                    navActivationZone.classList.remove('active');
+                    if (mainContent) {
+                        mainContent.classList.remove('with-hidden-nav');
+                        mainContent.classList.add('with-visible-nav');
+                    }
+                    isNavHidden = false;
+                    actualizarPosicionBoton();
+                    hideTimeout = setTimeout(hideNavigation, 3000);
+                }
+            }
+
+            function isUserInteracting() {
+                return bottomNav.matches(':hover') || navActivationZone.matches(':hover');
+            }
+
+            async function onNavClick(e) {
+                navItems.forEach(n => n.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+
+                const target = e.currentTarget.getAttribute('data-target');
+                document.querySelectorAll('#mainContent > div').forEach(d => {
+                    d.style.display = 'none';
+                });
+
+                const targetElement = document.getElementById(target);
+                if (targetElement) {
+                    targetElement.style.display = 'block';
+
+                    // CARGAR CONTENIDO ESPECÍFICO DE CADA VISTA
+                    if (target === 'feedView') {
+                        cargarFeedSuave();
+                    } else if (target === 'notificationsView') {
+                        cargarNotificacionesSuave();
+                    } else if (target === 'profileView') {
+                        // 🆕 CARGAR ESTADÍSTICAS DEL PERFIL
+                        cargarEstadisticasPerfil();
+                    }
+
+                    const mapButton = document.querySelector('.map-floating-button');
+
+                    if (target === 'mapView') {
+                        targetElement.style.position = 'fixed';
+                        targetElement.style.top = '44px';
+                        targetElement.style.left = '0';
+                        targetElement.style.right = '0';
+                        targetElement.style.bottom = '0';
+                        targetElement.style.width = '100%';
+                        targetElement.style.height = 'calc(100vh - 44px)';
+                        targetElement.style.zIndex = '998';
+
+                        if (mapButton) {
+                            mapButton.style.display = 'flex';
+                            mapButton.classList.add('visible');
+                            mapButton.classList.remove('hidden');
+                        }
+
+                        const iframe = targetElement.querySelector('iframe');
+                        if (iframe) {
+                            iframe.style.width = '100%';
+                            iframe.style.height = '100%';
+                        }
+                    } else {
+                        if (mapButton) {
+                            mapButton.style.display = 'none';
+                            mapButton.classList.remove('visible');
+                            mapButton.classList.add('hidden');
+                        }
+                    }
+                }
+
+                showNavigation();
+            }
+
+        } catch (error) {
+            console.error('❌ Error durante la inicialización:', error);
+        }
+    }, 100);
+});
+
+// 🔥 SOLUCIÓN 1: DEFINIR FUNCIONES DE LIKE ANTES DE USARLAS
+
+// Función para toggle like - DEFINIDA AL INICIO
+window.toggleLike = async function(id_reporte, btn) {
+    try {
+        const id_usuario = await obtenerUsuarioId();
+        const formData = new FormData();
+        formData.append('id_reporte', id_reporte);
+        formData.append('id_usuario', id_usuario);
+
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=toggle_like', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const r = await resp.json();
+
+        if (r.success) {
+            const likeCount = btn.querySelector('.like-count');
+            let currentCount = parseInt(likeCount.textContent) || 0;
+
+            if (r.action === 'liked') {
+                btn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (currentCount + 1) + '</span>';
+                btn.style.color = 'var(--danger)';
+                likeCount.textContent = currentCount + 1;
+
+                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
+                await notificarLike(id_reporte, id_usuario);
+
+            } else {
+                btn.innerHTML = '<i class="far fa-heart"></i> <span class="like-count">' + (currentCount - 1) + '</span>';
+                btn.style.color = '';
+                likeCount.textContent = Math.max(0, currentCount - 1);
+            }
+        } else {
+            alert('Error al procesar like');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error al conectar con el servidor');
+    }
+}
+
+// ✅ FUNCIÓN PARA NOTIFICAR LIKE - DEFINIDA AL INICIO
+async function notificarLike(id_reporte, id_usuario_origen) {
+    try {
+        // Obtener el dueño del reporte
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
+        const data = await resp.json();
+
+        if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
+            const formData = new FormData();
+            formData.append('id_reporte', id_reporte);
+            formData.append('id_usuario_origen', id_usuario_origen);
+            formData.append('id_usuario_destino', data.id_usuario_destino);
+
+            await fetch('../../controllers/notificacion_controlador.php?action=notificar_like', {
+                method: 'POST',
+                body: formData
+            });
+        }
+    } catch (error) {
+        console.error('Error notificando like:', error);
+    }
+}
+
+// 🆕 FUNCIÓN PARA CARGAR ESTADÍSTICAS DEL PERFIL
+async function cargarEstadisticasPerfil() {
     console.log('📊 Cargando estadísticas del perfil...');
 
     try {
@@ -229,212 +308,409 @@
         });
     }
 }
-            // 🆕 FUNCIÓN PARA ACTUALIZAR LA UI CON LAS ESTADÍSTICAS
-            function actualizarEstadisticasUI(estadisticas) {
-                const elementos = {
-                    reports: document.getElementById('statReports'),
-                    likes: document.getElementById('statLikes'),
-                    comments: document.getElementById('statComments'),
-                    views: document.getElementById('statViews')
-                };
 
-                for (const [key, element] of Object.entries(elementos)) {
-                    if (element && estadisticas[key] !== undefined) {
-                        element.textContent = estadisticas[key];
+// 🆕 FUNCIÓN PARA ACTUALIZAR LA UI CON LAS ESTADÍSTICAS
+function actualizarEstadisticasUI(estadisticas) {
+    const elementos = {
+        reports: document.getElementById('statReports'),
+        likes: document.getElementById('statLikes'),
+        comments: document.getElementById('statComments'),
+        views: document.getElementById('statViews')
+    };
 
-                        // Animación simple al actualizar
-                        element.style.transform = 'scale(1.1)';
-                        setTimeout(() => {
-                            element.style.transform = 'scale(1)';
-                        }, 300);
-                    }
-                }
-            }
+    for (const [key, element] of Object.entries(elementos)) {
+        if (element && estadisticas[key] !== undefined) {
+            element.textContent = estadisticas[key];
 
-            // FUNCIÓN PARA VERIFICAR SESIÓN
-            async function verificarSesion() {
-                try {
-                    const resp = await fetch('../../controllers/usuario_controlador.php?action=verificar_sesion', {
-                        method: 'GET',
-                        credentials: 'include'
-                    });
+            // Animación simple al actualizar
+            element.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+}
 
-                    const data = await resp.json();
-                    console.log('🔐 Estado sesión:', data);
+// FUNCIÓN PARA VERIFICAR SESIÓN
+async function verificarSesion() {
+    try {
+        const resp = await fetch('../../controllers/usuario_controlador.php?action=verificar_sesion', {
+            method: 'GET',
+            credentials: 'include'
+        });
 
-                    if (!data.sesion_activa) {
-                        console.warn('⚠️ Sesión no activa, redirigiendo...');
-                        window.location.href = '../../index.php';
-                        return false;
-                    }
+        const data = await resp.json();
+        console.log('🔐 Estado sesión:', data);
 
-                    return true;
-                } catch (error) {
-                    console.error('Error verificando sesión:', error);
-                    return false;
-                }
-            }
+        if (!data.sesion_activa) {
+            console.warn('⚠️ Sesión no activa, redirigiendo...');
+            window.location.href = '../../index.php';
+            return false;
+        }
 
-            // FUNCIÓN MEJORADA PARA CARGAR IMÁGENES
-            function cargarImagenSegura(elemento, url) {
-                if (!elemento) return;
+        return true;
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
+        return false;
+    }
+}
 
-                // Si no hay URL o está vacía, usar imagen por defecto
-                if (!url || url === '' || url === 'null') {
-                    elemento.src = window.location.origin + '/imagenes/default-avatar.png';
-                    return;
-                }
+// FUNCIÓN MEJORADA PARA CARGAR IMÁGENES
+function cargarImagenSegura(elemento, url) {
+    if (!elemento) return;
 
-                // Si la URL ya es absoluta, usarla directamente
-                if (url.startsWith('http')) {
-                    elemento.src = url;
-                } else {
-                    // Si es relativa, convertir a absoluta
-                    const baseUrl = window.location.origin;
-                    elemento.src = baseUrl + (url.startsWith('/') ? url : '/' + url);
-                }
+    // Si no hay URL o está vacía, usar imagen por defecto
+    if (!url || url === '' || url === 'null') {
+        elemento.src = window.location.origin + '/imagenes/default-avatar.png';
+        return;
+    }
 
-                // Manejar errores de carga de manera más robusta
-                elemento.onerror = function() {
-                    console.warn('❌ Error cargando imagen:', this.src);
-                    // Usar imagen por defecto absoluta
-                    this.src = window.location.origin + '/imagenes/default-avatar.png';
-                    this.onerror = null; // Prevenir bucles infinitos
-                };
+    // Si la URL ya es absoluta, usarla directamente
+    if (url.startsWith('http')) {
+        elemento.src = url;
+    } else {
+        // Si es relativa, convertir a absoluta
+        const baseUrl = window.location.origin;
+        elemento.src = baseUrl + (url.startsWith('/') ? url : '/' + url);
+    }
 
-                // Verificar si la imagen carga correctamente
-                elemento.onload = function() {
-                    console.log('✅ Imagen cargada correctamente:', this.src);
-                };
-            }
-            function aplicarCargaSeguraAvatares() {
+    // Manejar errores de carga de manera más robusta
+    elemento.onerror = function() {
+        console.warn('❌ Error cargando imagen:', this.src);
+        // Usar imagen por defecto absoluta
+        this.src = window.location.origin + '/imagenes/default-avatar.png';
+        this.onerror = null; // Prevenir bucles infinitos
+    };
+
+    // Verificar si la imagen carga correctamente
+    elemento.onload = function() {
+        console.log('✅ Imagen cargada correctamente:', this.src);
+    };
+}
+
+function aplicarCargaSeguraAvatares() {
     document.querySelectorAll('.post-header .avatar').forEach(avatar => {
         cargarImagenSegura(avatar, avatar.src);
     });
 }
 
-// Llamar esta función después de cargar todos los posts en cargarFeedSuave
-if (postsContainer && loadingPosts && noPosts) {
-    mostrarElemento(loadingPosts, false);
-    postsContainer.innerHTML = '';
+// FUNCIÓN PARA OBTENER ID DE USUARIO
+async function obtenerUsuarioId() {
+    if (window.usuarioId) {
+        return window.usuarioId;
+    }
 
-    data.forEach(reporte => {
-        try {
-            const postElement = crearPostElement(reporte);
-            if (postElement) {
-                postsContainer.appendChild(postElement);
-            }
-        } catch (error) {
-            console.error('Error creando elemento de post:', error);
+    try {
+        const resp = await fetch('../../controllers/usuario_controlador.php?action=obtener_id', {
+            credentials: 'include'
+        });
+        const data = await resp.json();
+        if (data.success && data.id_usuario) {
+            window.usuarioId = data.id_usuario;
+            return data.id_usuario;
         }
-    });
+    } catch (error) {
+        console.error('Error obteniendo ID de usuario:', error);
+    }
 
-    // 🆕 APLICAR CARGA SEGURA A TODOS LOS AVATARES
-    aplicarCargaSeguraAvatares();
+    return 0;
 }
 
-            // Cargar feed de forma segura
-            async function cargarFeedSuave() {
-                console.log('📰 Cargando feed de reportes...');
+// Función para cargar likes de un post
+async function cargarLikesPost(id_reporte, postElement) {
+    try {
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_likes&id_reporte=${id_reporte}`, {
+            credentials: 'include'
+        });
+        const data = await resp.json();
 
-                const feedView = document.getElementById('feedView');
-                if (!feedView) {
-                    console.error('❌ feedView no encontrado');
-                    return;
-                }
+        const likeCount = postElement.querySelector('.like-count');
+        if (likeCount && data.total_likes !== undefined) {
+            likeCount.textContent = data.total_likes;
+        }
+    } catch (error) {
+        console.error('Error cargando likes:', error);
+    }
+}
 
-                const postsContainer = document.getElementById('postsContainer');
-                const loadingPosts = document.getElementById('loadingPosts');
-                const noPosts = document.getElementById('noPosts');
+// Función para cargar comentarios de un post
+async function cargarComentariosPost(id_reporte, postElement) {
+    try {
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
+            credentials: 'include'
+        });
+        const data = await resp.json();
 
-                function mostrarElemento(elemento, mostrar) {
-                    if (elemento && elemento.style) {
-                        elemento.style.display = mostrar ? 'block' : 'none';
-                    }
-                }
-
-                if (postsContainer && loadingPosts && noPosts) {
-                    postsContainer.innerHTML = '';
-                    mostrarElemento(loadingPosts, true);
-                    mostrarElemento(noPosts, false);
-                } else {
-                    feedView.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Cargando reportes...</p></div>';
-                }
-
-                try {
-                    const resp = await fetch('../../controllers/reportecontrolador.php?action=listar', {
-                        credentials: 'include'
-                    });
-
-                    // MANEJO SEGURO DE ERRORES - SIN REDIRECCIONES
-                    if (!resp.ok) {
-                        if (resp.status === 401) {
-                            console.warn('⚠️ Posible problema de sesión al cargar feed');
-                            // No redirigir, solo mostrar error
-                            throw new Error('Problema de autenticación');
-                        }
-                        throw new Error(`Error HTTP: ${resp.status}`);
-                    }
-
-                    const data = await resp.json();
-
-                    if (!Array.isArray(data)) {
-                        throw new Error('Respuesta inválida del servidor');
-                    }
-
-                    if (data.length === 0) {
-                        if (postsContainer && loadingPosts && noPosts) {
-                            mostrarElemento(loadingPosts, false);
-                            mostrarElemento(noPosts, true);
-                        } else {
-                            feedView.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 40px;">No hay reportes disponibles.</p>';
-                        }
-                        return;
-                    }
-
-                    if (postsContainer && loadingPosts && noPosts) {
-                        mostrarElemento(loadingPosts, false);
-                        postsContainer.innerHTML = '';
-
-                        data.forEach(reporte => {
-                            try {
-                                const postElement = crearPostElement(reporte);
-                                if (postElement) {
-                                    postsContainer.appendChild(postElement);
-                                }
-                            } catch (error) {
-                                console.error('Error creando elemento de post:', error);
-                            }
-                        });
-                    } else {
-                        feedView.innerHTML = '';
-                        data.forEach(post => {
-                            try {
-                                const postElement = crearPostElement(post);
-                                if (postElement) {
-                                    feedView.appendChild(postElement);
-                                }
-                            } catch (error) {
-                                console.error('Error creando post fallback:', error);
-                            }
-                        });
-                    }
-
-                    console.log(`✅ Feed cargado: ${data.length} reportes`);
-
-                } catch (err) {
-                    console.error('❌ Error cargando feed:', err);
-
-                    // MOSTRAR ERROR SIN REDIRIGIR
-                    if (postsContainer && loadingPosts && noPosts) {
-                        mostrarElemento(loadingPosts, false);
-                        mostrarElemento(noPosts, true);
-                        noPosts.innerHTML = '<p style="text-align:center; color:var(--warning); padding: 20px;">Problema al cargar reportes. Intenta recargar la página.</p>';
-                    } else {
-                        feedView.innerHTML = '<p style="text-align:center; color:var(--warning); padding: 20px;">Problema al cargar reportes.</p>';
-                    }
-                }
+        const commentBtn = postElement.querySelector('.comment-btn');
+        if (commentBtn && data.total_comentarios !== undefined) {
+            const commentText = commentBtn.querySelector('span');
+            if (commentText) {
+                commentText.textContent = `Comentarios (${data.total_comentarios})`;
             }
+        }
+    } catch (error) {
+        console.error('Error cargando comentarios:', error);
+    }
+}
+
+// Función para verificar si el usuario actual dio like
+async function verificarLikeUsuario(id_reporte, postElement) {
+    try {
+        const id_usuario = await obtenerUsuarioId();
+        const formData = new FormData(); // 🔥 CORRECCIÓN: FormData no FormdData
+        formData.append('id_reporte', id_reporte);
+        formData.append('id_usuario', id_usuario);
+
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=verificar_like', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const data = await resp.json();
+
+        const likeBtn = postElement.querySelector('.like-btn');
+        if (likeBtn && data.liked) {
+            likeBtn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (likeBtn.querySelector('.like-count')?.textContent || '0') + '</span>';
+            likeBtn.style.color = 'var(--danger)';
+        }
+    } catch (error) {
+        console.error('Error verificando like:', error);
+    }
+}
+
+// Función para crear elemento de post
+function crearPostElement(reporte) {
+    try {
+        // 🆕 MEJOR MANEJO DE FOTO DE PERFIL
+        let avatarUrl = '/imagenes/default-avatar.png';
+
+        if (reporte.foto_perfil &&
+            reporte.foto_perfil !== '' &&
+            reporte.foto_perfil !== 'null' &&
+            reporte.foto_perfil !== null) {
+
+            // Si la URL es relativa, hacerla absoluta
+            if (reporte.foto_perfil.startsWith('/')) {
+                avatarUrl = window.location.origin + reporte.foto_perfil;
+            } else if (reporte.foto_perfil.startsWith('http')) {
+                avatarUrl = reporte.foto_perfil;
+            } else {
+                // Si es una ruta relativa sin slash inicial
+                avatarUrl = window.location.origin + '/' + reporte.foto_perfil;
+            }
+        }
+
+        // 🆕 USAR NOMBRE REAL O CORREO
+        const nombreUsuario = (reporte.nombres && reporte.apellidos)
+            ? `${reporte.nombres} ${reporte.apellidos}`.trim()
+            : (reporte.usuario ? reporte.usuario.split('@')[0] : 'Usuario');
+
+        const timeText = tiempoRelativo(new Date(reporte.fecha_reporte));
+        const descripcionCorta = reporte.descripcion && reporte.descripcion.length > 150 ?
+            reporte.descripcion.substring(0, 150) + '...' : reporte.descripcion;
+
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.setAttribute('data-post-id', reporte.id_reporte);
+
+        div.innerHTML = `
+            <div class="post-header">
+                <img src="${avatarUrl}" class="avatar" alt="${nombreUsuario}"
+                     onerror="this.src='${window.location.origin}/imagenes/default-avatar.png'">
+                <div class="user-info">
+                    <div class="user-name">${escapeHtml(nombreUsuario)}</div>
+                    <div class="post-meta">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Ubicación en mapa</span>
+                        <i class="fas fa-clock"></i>
+                        <span>${timeText}</span>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="post-incident-type">${escapeHtml(reporte.tipo_incidente || 'Tipo no especificado')}</span>
+                    </div>
+                    <div class="post-status">
+                        <span class="status-badge ${(reporte.estado || 'pendiente').toLowerCase().replace(' ', '-')}">${reporte.estado || 'pendiente'}</span>
+                    </div>
+                </div>
+            </div>
+
+            ${reporte.imagenes && reporte.imagenes.length > 0 ? `
+                <div class="post-images">
+                    ${crearEstructuraImagenesSimple(reporte.imagenes)}
+                </div>
+            ` : ''}
+
+            <div class="post-desc">${escapeHtml(reporte.descripcion || 'Sin descripción')}</div>
+
+            <div class="post-additional-info">
+                <div class="info-item">
+                    <i class="fas fa-road"></i>
+                    <span class="street-info">Coordenadas: ${formatearCoordenada(reporte.latitud)}, ${formatearCoordenada(reporte.longitud)}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-calendar-day"></i>
+                    <span class="report-date">${formatearFecha(reporte.fecha_reporte)}</span>
+                </div>
+            </div>
+
+            <div class="post-actions">
+                <button class="btn-small like-btn" data-report-id="${reporte.id_reporte}">
+                    <i class="far fa-heart"></i>
+                    <span class="like-count">0</span>
+                </button>
+                <button class="btn-small comment-btn" data-report-id="${reporte.id_reporte}">
+                    <i class="fas fa-comment"></i>
+                    <span>Comentarios (0)</span>
+                </button>
+                <button class="btn-small view-map-btn">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Ver en Mapa</span>
+                </button>
+            </div>
+        `;
+
+        // 🔥 SOLUCIÓN 2: YA NO NECESITAMOS AGREGAR EVENT LISTENER PARA LIKE
+        // porque usamos delegación de eventos
+
+        const commentBtn = div.querySelector('.comment-btn');
+        const viewMapBtn = div.querySelector('.view-map-btn');
+        const streetInfo = div.querySelector('.street-info');
+
+        if (commentBtn) {
+            commentBtn.addEventListener('click', () => {
+                if (typeof ComentariosManager !== 'undefined' && ComentariosManager.abrirComentarios) {
+                    ComentariosManager.abrirComentarios(reporte.id_reporte);
+                } else {
+                    alert('Función de comentarios no disponible');
+                }
+            });
+        }
+        if (viewMapBtn) viewMapBtn.addEventListener('click', () => navegarAlMapa(reporte));
+        if (streetInfo) {
+            streetInfo.style.cursor = 'pointer';
+            streetInfo.title = 'Haz clic para ver en el mapa';
+            streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
+        }
+
+        // Cargar datos de likes y comentarios después de crear el elemento
+        setTimeout(() => {
+            cargarLikesPost(reporte.id_reporte, div);
+            cargarComentariosPost(reporte.id_reporte, div);
+            verificarLikeUsuario(reporte.id_reporte, div);
+        }, 100);
+
+        return div;
+
+    } catch (error) {
+        console.error('Error creando post:', error);
+        return null;
+    }
+}
+
+// Cargar feed de forma segura
+async function cargarFeedSuave() {
+    console.log('📰 Cargando feed de reportes...');
+
+    const feedView = document.getElementById('feedView');
+    if (!feedView) {
+        console.error('❌ feedView no encontrado');
+        return;
+    }
+
+    const postsContainer = document.getElementById('postsContainer');
+    const loadingPosts = document.getElementById('loadingPosts');
+    const noPosts = document.getElementById('noPosts');
+
+    function mostrarElemento(elemento, mostrar) {
+        if (elemento && elemento.style) {
+            elemento.style.display = mostrar ? 'block' : 'none';
+        }
+    }
+
+    if (postsContainer && loadingPosts && noPosts) {
+        postsContainer.innerHTML = '';
+        mostrarElemento(loadingPosts, true);
+        mostrarElemento(noPosts, false);
+    } else {
+        feedView.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Cargando reportes...</p></div>';
+    }
+
+    try {
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=listar', {
+            credentials: 'include'
+        });
+
+        // MANEJO SEGURO DE ERRORES - SIN REDIRECCIONES
+        if (!resp.ok) {
+            if (resp.status === 401) {
+                console.warn('⚠️ Posible problema de sesión al cargar feed');
+                // No redirigir, solo mostrar error
+                throw new Error('Problema de autenticación');
+            }
+            throw new Error(`Error HTTP: ${resp.status}`);
+        }
+
+        const data = await resp.json();
+
+        if (!Array.isArray(data)) {
+            throw new Error('Respuesta inválida del servidor');
+        }
+
+        if (data.length === 0) {
+            if (postsContainer && loadingPosts && noPosts) {
+                mostrarElemento(loadingPosts, false);
+                mostrarElemento(noPosts, true);
+            } else {
+                feedView.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 40px;">No hay reportes disponibles.</p>';
+            }
+            return;
+        }
+
+        if (postsContainer && loadingPosts && noPosts) {
+            mostrarElemento(loadingPosts, false);
+            postsContainer.innerHTML = '';
+
+            data.forEach(reporte => {
+                try {
+                    const postElement = crearPostElement(reporte);
+                    if (postElement) {
+                        postsContainer.appendChild(postElement);
+                    }
+                } catch (error) {
+                    console.error('Error creando elemento de post:', error);
+                }
+            });
+
+            // 🆕 APLICAR CARGA SEGURA A TODOS LOS AVATARES
+            aplicarCargaSeguraAvatares();
+        } else {
+            feedView.innerHTML = '';
+            data.forEach(post => {
+                try {
+                    const postElement = crearPostElement(post);
+                    if (postElement) {
+                        feedView.appendChild(postElement);
+                    }
+                } catch (error) {
+                    console.error('Error creando post fallback:', error);
+                }
+            });
+        }
+
+        console.log(`✅ Feed cargado: ${data.length} reportes`);
+
+    } catch (err) {
+        console.error('❌ Error cargando feed:', err);
+
+        // MOSTRAR ERROR SIN REDIRIGIR
+        if (postsContainer && loadingPosts && noPosts) {
+            mostrarElemento(loadingPosts, false);
+            mostrarElemento(noPosts, true);
+            noPosts.innerHTML = '<p style="text-align:center; color:var(--warning); padding: 20px;">Problema al cargar reportes. Intenta recargar la página.</p>';
+        } else {
+            feedView.innerHTML = '<p style="text-align:center; color:var(--warning); padding: 20px;">Problema al cargar reportes.</p>';
+        }
+    }
+}
 
             // Versiones seguras de otras funciones
             async function cargarNotificacionesSuave() {
