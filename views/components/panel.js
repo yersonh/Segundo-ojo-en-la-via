@@ -307,6 +307,31 @@
                     console.log('✅ Imagen cargada correctamente:', this.src);
                 };
             }
+            function aplicarCargaSeguraAvatares() {
+    document.querySelectorAll('.post-header .avatar').forEach(avatar => {
+        cargarImagenSegura(avatar, avatar.src);
+    });
+}
+
+// Llamar esta función después de cargar todos los posts en cargarFeedSuave
+if (postsContainer && loadingPosts && noPosts) {
+    mostrarElemento(loadingPosts, false);
+    postsContainer.innerHTML = '';
+
+    data.forEach(reporte => {
+        try {
+            const postElement = crearPostElement(reporte);
+            if (postElement) {
+                postsContainer.appendChild(postElement);
+            }
+        } catch (error) {
+            console.error('Error creando elemento de post:', error);
+        }
+    });
+
+    // 🆕 APLICAR CARGA SEGURA A TODOS LOS AVATARES
+    aplicarCargaSeguraAvatares();
+}
 
             // Cargar feed de forma segura
             async function cargarFeedSuave() {
@@ -529,10 +554,24 @@ async function marcarTodasLeidas() {
             f// Función para crear elemento de post - MODIFICADA PARA USAR FOTO DE PERFIL
 function crearPostElement(reporte) {
     try {
-        // 🆕 USAR FOTO DE PERFIL REAL O POR DEFECTO
-        const avatar = reporte.foto_perfil && reporte.foto_perfil !== ''
-            ? reporte.foto_perfil
-            : '/imagenes/default-avatar.png';
+        // 🆕 MEJOR MANEJO DE FOTO DE PERFIL
+        let avatarUrl = '/imagenes/default-avatar.png';
+
+        if (reporte.foto_perfil &&
+            reporte.foto_perfil !== '' &&
+            reporte.foto_perfil !== 'null' &&
+            reporte.foto_perfil !== null) {
+
+            // Si la URL es relativa, hacerla absoluta
+            if (reporte.foto_perfil.startsWith('/')) {
+                avatarUrl = window.location.origin + reporte.foto_perfil;
+            } else if (reporte.foto_perfil.startsWith('http')) {
+                avatarUrl = reporte.foto_perfil;
+            } else {
+                // Si es una ruta relativa sin slash inicial
+                avatarUrl = window.location.origin + '/' + reporte.foto_perfil;
+            }
+        }
 
         // 🆕 USAR NOMBRE REAL O CORREO
         const nombreUsuario = (reporte.nombres && reporte.apellidos)
@@ -549,7 +588,7 @@ function crearPostElement(reporte) {
 
         div.innerHTML = `
             <div class="post-header">
-                <img src="${avatar}" class="avatar" alt="${nombreUsuario}"
+                <img src="${avatarUrl}" class="avatar" alt="${nombreUsuario}"
                      onerror="this.src='${window.location.origin}/imagenes/default-avatar.png'">
                 <div class="user-info">
                     <div class="user-name">${escapeHtml(nombreUsuario)}</div>
@@ -602,7 +641,7 @@ function crearPostElement(reporte) {
             </div>
         `;
 
-        // El resto del código (event listeners) se mantiene igual
+        // Agregar event listeners
         const likeBtn = div.querySelector('.like-btn');
         const commentBtn = div.querySelector('.comment-btn');
         const viewMapBtn = div.querySelector('.view-map-btn');
