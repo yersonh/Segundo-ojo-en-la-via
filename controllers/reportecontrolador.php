@@ -29,9 +29,13 @@ try {
             r.fecha_reporte,
             u.correo AS usuario,
             r.estado
+            p.foto_perfil,
+            p.nombres,
+            p.apellidos
         FROM reporte r
         INNER JOIN tipo_incidente t ON r.id_tipo_incidente = t.id_tipo_incidente
         INNER JOIN usuario u ON r.id_usuario = u.id_usuario
+        INNER JOIN persona p ON u.id_persona = p.id_persona
         ORDER BY r.fecha_reporte DESC
     ";
 

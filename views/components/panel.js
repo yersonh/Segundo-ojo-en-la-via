@@ -527,110 +527,148 @@ async function marcarTodasLeidas() {
 
             // Función para crear elemento de post
             function crearPostElement(reporte) {
-                try {
-                    const avatar = '/imagenes/default-avatar.png';
-                    const timeText = tiempoRelativo(new Date(reporte.fecha_reporte));
-                    const descripcionCorta = reporte.descripcion && reporte.descripcion.length > 150 ?
-                        reporte.descripcion.substring(0, 150) + '...' : reporte.descripcion;
+    try {
+        // 🆕 OBTENER FOTO DE PERFIL O USAR POR DEFECTO
+        const avatar = obtenerFotoPerfil(reporte.foto_perfil);
+        const timeText = tiempoRelativo(new Date(reporte.fecha_reporte));
+        const descripcionCorta = reporte.descripcion && reporte.descripcion.length > 150 ?
+            reporte.descripcion.substring(0, 150) + '...' : reporte.descripcion;
 
-                    const div = document.createElement('div');
-                    div.className = 'post';
-                    div.setAttribute('data-post-id', reporte.id_reporte);
+        // 🆕 OBTENER NOMBRE COMPLETO O CORREO
+        const nombreUsuario = obtenerNombreUsuario(reporte);
 
-                    div.innerHTML = `
-                        <div class="post-header">
-                            <img src="${avatar}" class="avatar" alt="${reporte.usuario || 'Usuario'}" onerror="this.src='/imagenes/default-avatar.png'">
-                            <div class="user-info">
-                                <div class="user-name">${escapeHtml(reporte.usuario || 'Usuario')}</div>
-                                <div class="post-meta">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>Ubicación en mapa</span>
-                                    <i class="fas fa-clock"></i>
-                                    <span>${timeText}</span>
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span class="post-incident-type">${escapeHtml(reporte.tipo_incidente || 'Tipo no especificado')}</span>
-                                </div>
-                                <div class="post-status">
-                                    <span class="status-badge ${(reporte.estado || 'pendiente').toLowerCase().replace(' ', '-')}">${reporte.estado || 'pendiente'}</span>
-                                </div>
-                            </div>
-                        </div>
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.setAttribute('data-post-id', reporte.id_reporte);
 
-                        ${reporte.imagenes && reporte.imagenes.length > 0 ? `
-                            <div class="post-images">
-                                ${crearEstructuraImagenesSimple(reporte.imagenes)}
-                            </div>
-                        ` : ''}
+        // 🎯 ESTRUCTURA HTML DEL REPORTE CON FOTO DE PERFIL
+        div.innerHTML = `
+            <div class="post-header">
+                <img src="${avatar}" class="avatar" alt="${nombreUsuario}"
+                     onerror="this.src='${window.location.origin}/imagenes/default-avatar.png'">
+                <div class="user-info">
+                    <div class="user-name">${escapeHtml(nombreUsuario)}</div>
+                    <div class="post-meta">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Ubicación en mapa</span>
+                        <i class="fas fa-clock"></i>
+                        <span>${timeText}</span>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="post-incident-type">${escapeHtml(reporte.tipo_incidente || 'Tipo no especificado')}</span>
+                    </div>
+                    <div class="post-status">
+                        <span class="status-badge ${(reporte.estado || 'pendiente').toLowerCase().replace(' ', '-')}">${reporte.estado || 'pendiente'}</span>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="post-desc">${escapeHtml(reporte.descripcion || 'Sin descripción')}</div>
+            ${reporte.imagenes && reporte.imagenes.length > 0 ? `
+                <div class="post-images">
+                    ${crearEstructuraImagenesSimple(reporte.imagenes)}
+                </div>
+            ` : ''}
 
-                        <div class="post-additional-info">
-                            <div class="info-item">
-                                <i class="fas fa-road"></i>
-                                <span class="street-info">Coordenadas: ${formatearCoordenada(reporte.latitud)}, ${formatearCoordenada(reporte.longitud)}</span>
-                            </div>
-                            <div class="info-item">
-                                <i class="fas fa-calendar-day"></i>
-                                <span class="report-date">${formatearFecha(reporte.fecha_reporte)}</span>
-                            </div>
-                        </div>
+            <div class="post-desc">${escapeHtml(reporte.descripcion || 'Sin descripción')}</div>
 
-                        <div class="post-actions">
-                            <button class="btn-small like-btn" data-report-id="${reporte.id_reporte}">
-                                <i class="far fa-heart"></i>
-                                <span class="like-count">0</span>
-                            </button>
-                            <button class="btn-small comment-btn" data-report-id="${reporte.id_reporte}">
-                                <i class="fas fa-comment"></i>
-                                <span>Comentarios (0)</span>
-                            </button>
-                            <button class="btn-small view-map-btn">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>Ver en Mapa</span>
-                            </button>
-                        </div>
-                    `;
+            <div class="post-additional-info">
+                <div class="info-item">
+                    <i class="fas fa-road"></i>
+                    <span class="street-info">Coordenadas: ${formatearCoordenada(reporte.latitud)}, ${formatearCoordenada(reporte.longitud)}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-calendar-day"></i>
+                    <span class="report-date">${formatearFecha(reporte.fecha_reporte)}</span>
+                </div>
+            </div>
 
-                    // Agregar event listeners
-                    const likeBtn = div.querySelector('.like-btn');
-                    const commentBtn = div.querySelector('.comment-btn');
-                    const viewMapBtn = div.querySelector('.view-map-btn');
-                    const streetInfo = div.querySelector('.street-info');
+            <div class="post-actions">
+                <button class="btn-small like-btn" data-report-id="${reporte.id_reporte}">
+                    <i class="far fa-heart"></i>
+                    <span class="like-count">0</span>
+                </button>
+                <button class="btn-small comment-btn" data-report-id="${reporte.id_reporte}">
+                    <i class="fas fa-comment"></i>
+                    <span>Comentarios (0)</span>
+                </button>
+                <button class="btn-small view-map-btn">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Ver en Mapa</span>
+                </button>
+            </div>
+        `;
 
-                    if (likeBtn) {
-                        likeBtn.addEventListener('click', () => toggleLike(reporte.id_reporte, likeBtn));
-                    }
-                    if (commentBtn) {
-                        commentBtn.addEventListener('click', () => {
-                            if (typeof ComentariosManager !== 'undefined' && ComentariosManager.abrirComentarios) {
-                                ComentariosManager.abrirComentarios(reporte.id_reporte);
-                            } else {
-                                alert('Función de comentarios no disponible');
-                            }
-                        });
-                    }
-                    if (viewMapBtn) viewMapBtn.addEventListener('click', () => navegarAlMapa(reporte));
-                    if (streetInfo) {
-                        streetInfo.style.cursor = 'pointer';
-                        streetInfo.title = 'Haz clic para ver en el mapa';
-                        streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
-                    }
+        // 🎯 AGREGAR INTERACTIVIDAD (código igual)
+        const likeBtn = div.querySelector('.like-btn');
+        const commentBtn = div.querySelector('.comment-btn');
+        const viewMapBtn = div.querySelector('.view-map-btn');
+        const streetInfo = div.querySelector('.street-info');
 
-                    // Cargar datos de likes y comentarios después de crear el elemento
-                    setTimeout(() => {
-                        cargarLikesPost(reporte.id_reporte, div);
-                        cargarComentariosPost(reporte.id_reporte, div);
-                        verificarLikeUsuario(reporte.id_reporte, div);
-                    }, 100);
-
-                    return div;
-
-                } catch (error) {
-                    console.error('Error creando post:', error);
-                    return null;
+        if (likeBtn) {
+            likeBtn.addEventListener('click', () => toggleLike(reporte.id_reporte, likeBtn));
+        }
+        if (commentBtn) {
+            commentBtn.addEventListener('click', () => {
+                if (typeof ComentariosManager !== 'undefined' && ComentariosManager.abrirComentarios) {
+                    ComentariosManager.abrirComentarios(reporte.id_reporte);
+                } else {
+                    alert('Función de comentarios no disponible');
                 }
-            }
+            });
+        }
+        if (viewMapBtn) viewMapBtn.addEventListener('click', () => navegarAlMapa(reporte));
+        if (streetInfo) {
+            streetInfo.style.cursor = 'pointer';
+            streetInfo.title = 'Haz clic para ver en el mapa';
+            streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
+        }
 
+        // Cargar datos adicionales
+        setTimeout(() => {
+            cargarLikesPost(reporte.id_reporte, div);
+            cargarComentariosPost(reporte.id_reporte, div);
+            verificarLikeUsuario(reporte.id_reporte, div);
+        }, 100);
+
+        return div;
+
+    } catch (error) {
+        console.error('Error creando post:', error);
+        return null;
+    }
+}
+function obtenerFotoPerfil(fotoPerfil) {
+    // Si no hay foto o está vacía, usar por defecto
+    if (!fotoPerfil || fotoPerfil === '' || fotoPerfil === 'null') {
+        return window.location.origin + '/imagenes/default-avatar.png';
+    }
+
+    // Si la foto ya es una URL completa, usarla directamente
+    if (fotoPerfil.startsWith('http')) {
+        return fotoPerfil;
+    }
+
+    // Si es una ruta relativa, convertir a absoluta
+    const baseUrl = window.location.origin;
+    return baseUrl + (fotoPerfil.startsWith('/') ? fotoPerfil : '/' + fotoPerfil);
+}
+function obtenerNombreUsuario(reporte) {
+    // Intentar usar nombres y apellidos primero
+    if (reporte.nombres && reporte.apellidos) {
+        const nombreCompleto = `${reporte.nombres} ${reporte.apellidos}`.trim();
+        if (nombreCompleto) {
+            return nombreCompleto;
+        }
+    }
+
+    // Si no hay nombres, usar el correo
+    if (reporte.usuario) {
+        // Extraer solo la parte antes del @ del correo
+        return reporte.usuario.split('@')[0];
+    }
+
+    // Fallback
+    return 'Usuario';
+}
             // Función para cargar likes de un post
             async function cargarLikesPost(id_reporte, postElement) {
                 try {
