@@ -549,9 +549,47 @@ async function marcarTodasLeidas() {
 
                 return 0;
             }
+// Función para toggle like
+            window.toggleLike = async function(id_reporte, btn) {
+    try {
+        const id_usuario = await obtenerUsuarioId();
+        const formData = new FormData();
+        formData.append('id_reporte', id_reporte);
+        formData.append('id_usuario', id_usuario);
 
+        const resp = await fetch('../../controllers/reportecontrolador.php?action=toggle_like', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const r = await resp.json();
+
+        if (r.success) {
+            const likeCount = btn.querySelector('.like-count');
+            let currentCount = parseInt(likeCount.textContent) || 0;
+
+            if (r.action === 'liked') {
+                btn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (currentCount + 1) + '</span>';
+                btn.style.color = 'var(--danger)';
+                likeCount.textContent = currentCount + 1;
+
+                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
+                await notificarLike(id_reporte, id_usuario);
+
+            } else {
+                btn.innerHTML = '<i class="far fa-heart"></i> <span class="like-count">' + (currentCount - 1) + '</span>';
+                btn.style.color = '';
+                likeCount.textContent = Math.max(0, currentCount - 1);
+            }
+        } else {
+            alert('Error al procesar like');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error al conectar con el servidor');
+    }
+}
             // Función para crear elemento de post
-            f// Función para crear elemento de post - MODIFICADA PARA USAR FOTO DE PERFIL
 function crearPostElement(reporte) {
     try {
         // 🆕 MEJOR MANEJO DE FOTO DE PERFIL
@@ -743,46 +781,7 @@ function crearPostElement(reporte) {
                 }
             }
 
-            // Función para toggle like
-            window.toggleLike = async function(id_reporte, btn) {
-    try {
-        const id_usuario = await obtenerUsuarioId();
-        const formData = new FormData();
-        formData.append('id_reporte', id_reporte);
-        formData.append('id_usuario', id_usuario);
 
-        const resp = await fetch('../../controllers/reportecontrolador.php?action=toggle_like', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-        });
-        const r = await resp.json();
-
-        if (r.success) {
-            const likeCount = btn.querySelector('.like-count');
-            let currentCount = parseInt(likeCount.textContent) || 0;
-
-            if (r.action === 'liked') {
-                btn.innerHTML = '<i class="fas fa-heart"></i> <span class="like-count">' + (currentCount + 1) + '</span>';
-                btn.style.color = 'var(--danger)';
-                likeCount.textContent = currentCount + 1;
-
-                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
-                await notificarLike(id_reporte, id_usuario);
-
-            } else {
-                btn.innerHTML = '<i class="far fa-heart"></i> <span class="like-count">' + (currentCount - 1) + '</span>';
-                btn.style.color = '';
-                likeCount.textContent = Math.max(0, currentCount - 1);
-            }
-        } else {
-            alert('Error al procesar like');
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Error al conectar con el servidor');
-    }
-}
 // ✅ FUNCIÓN PARA NOTIFICAR LIKE
 async function notificarLike(id_reporte, id_usuario_origen) {
     try {
