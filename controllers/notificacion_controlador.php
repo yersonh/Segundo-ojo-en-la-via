@@ -302,20 +302,36 @@ try {
 
         // 🆕 CONTAR NOTIFICACIONES NO LEÍDAS
         case 'contar_no_leidas':
-            if (!$id_usuario) {
-                echo json_encode(['success' => false, 'error' => 'Usuario no autenticado']);
-                break;
-            }
+          try {
+        // Verificar sesión
+        if (!isset($_SESSION['usuario_id'])) {
+            echo json_encode(['total_no_leidas' => 0]);
+            exit;
+        }
 
-            $query = "SELECT COUNT(*) as total FROM notificacion
-                    WHERE id_usuario_destino = :id_usuario AND leida = FALSE";
-            $stmt = $db->prepare($query);
-            $stmt->execute([':id_usuario' => $id_usuario]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $id_usuario = $_SESSION['usuario_id'];
 
-            echo json_encode(["total_no_leidas" => $result['total']]);
+        $sql = "SELECT COUNT(*) as total_no_leidas
+                FROM notificacion
+                WHERE id_usuario_destino = ? AND leida = 0";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$id_usuario]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'total_no_leidas' => (int)$result['total_no_leidas']
+        ]);
+
+    } catch (PDOException $e) {
+        error_log("Error contando notificaciones no leídas: " . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'total_no_leidas' => 0,
+            'error' => 'Error del servidor'
+        ]);
+    }
             break;
-// Agrega estos casos en el switch de notificacion_controlador.php
 
 case 'notificar_like':
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
