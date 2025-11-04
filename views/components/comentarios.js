@@ -1,6 +1,7 @@
-// Módulo para gestionar comentarios
+// Módulo para gestionar comentarios - VERSIÓN CORREGIDA
 const ComentariosManager = {
-    inicializado: false, // 🆕 Bandera para evitar inicialización múltiple
+    inicializado: false,
+    enviando: false, // 🆕 DEFINIR LA VARIABLE QUE FALTABA
 
     inicializar() {
         if (this.inicializado) {
@@ -16,18 +17,18 @@ const ComentariosManager = {
     configurarEventos() {
         const formComentario = document.getElementById('formComentario');
         if (formComentario) {
-            // 🆕 Remover event listeners anteriores para evitar duplicados
+            // 🆕 CORREGIDO: Usar arrow function para mantener contexto
             formComentario.removeEventListener('submit', this.manejadorSubmit);
 
-            // Crear manejador con bind para mantener el contexto
-            this.manejadorSubmit = this.agregarComentario.bind(this);
+            this.manejadorSubmit = (e) => this.agregarComentario(e);
             formComentario.addEventListener('submit', this.manejadorSubmit);
         }
 
         // Contador de caracteres
         const textoComentario = document.getElementById('textoComentario');
         if (textoComentario) {
-            textoComentario.addEventListener('input', this.actualizarContadorCaracteres);
+            // 🆕 CORREGIDO: Usar arrow function para mantener contexto
+            textoComentario.addEventListener('input', (e) => this.actualizarContadorCaracteres(e));
         }
 
         // Cerrar modal al hacer clic fuera
@@ -41,15 +42,17 @@ const ComentariosManager = {
         }
     },
 
-    actualizarContadorCaracteres() {
+    actualizarContadorCaracteres(e) {
+        const target = e.target;
         const contador = document.getElementById('comentarioChars');
-        if (contador) {
-            contador.textContent = this.value.length;
+
+        if (contador && target) {
+            contador.textContent = target.value.length;
 
             // Cambiar color si se acerca al límite
-            if (this.value.length > 450) {
+            if (target.value.length > 450) {
                 contador.style.color = '#e74c3c';
-            } else if (this.value.length > 400) {
+            } else if (target.value.length > 400) {
                 contador.style.color = '#f39c12';
             } else {
                 contador.style.color = '#6c757d';
@@ -82,8 +85,8 @@ const ComentariosManager = {
                 return;
             }
 
+            // 🆕 CORREGIDO: Usar función flecha para mantener contexto
             comentarios.forEach(comentario => {
-                // 🆕 CORREGIDO: Formato de fecha mejorado
                 const fecha = this.formatearFecha(comentario.fecha_comentario);
 
                 const comentarioHTML = `
@@ -108,88 +111,98 @@ const ComentariosManager = {
     },
 
     async agregarComentario(e) {
-    e.preventDefault();
+        e.preventDefault();
 
-    if (this.enviando) {
-        console.log('⚠️ Ya se está enviando un comentario');
-        return;
-    }
-
-    this.enviando = true;
-
-    const formData = new FormData(e.target);
-    const btnComentario = document.getElementById('btnComentario');
-    const textoComentario = document.getElementById('textoComentario');
-    const id_reporte = formData.get('id_reporte');
-    const id_usuario = window.usuarioId;
-
-    if (!btnComentario || !textoComentario) {
-        console.error('❌ Elementos del formulario no encontrados');
-        this.enviando = false;
-        return;
-    }
-
-    formData.append('id_usuario', id_usuario);
-
-    btnComentario.disabled = true;
-    btnComentario.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
-
-    try {
-        const resp = await fetch('../../controllers/reportecontrolador.php?action=agregar_comentario', {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await resp.json();
-
-        if (result.success) {
-            textoComentario.value = '';
-            this.actualizarContadorCaracteres.call(textoComentario);
-
-            // Recargar comentarios silenciosamente
-            await this.cargarComentarios(id_reporte);
-
-            console.log('✅ Comentario agregado correctamente');
-
-            // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
-            await this.notificarComentario(id_reporte, id_usuario);
-
-            // Actualizar contador en el post
-            this.actualizarContadorEnPost(id_reporte);
-
-        } else {
-            console.error('Error al agregar comentario:', result.mensaje || result.error);
+        if (this.enviando) {
+            console.log('⚠️ Ya se está enviando un comentario');
+            return;
         }
-    } catch (error) {
-        console.error('Error de conexión:', error);
-    } finally {
-        btnComentario.disabled = false;
-        btnComentario.innerHTML = '<i class="fas fa-paper-plane"></i> Publicar Comentario';
-        this.enviando = false;
-    }
-},
-// ✅ FUNCIÓN PARA NOTIFICAR COMENTARIO
-async notificarComentario(id_reporte, id_usuario_origen) {
-    try {
-        // Obtener el dueño del reporte
-        const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
-        const data = await resp.json();
 
-        if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
-            const formData = new FormData();
-            formData.append('id_reporte', id_reporte);
-            formData.append('id_usuario_origen', id_usuario_origen);
-            formData.append('id_usuario_destino', data.id_usuario_destino);
+        this.enviando = true;
 
-            await fetch('../../controllers/notificacion_controlador.php?action=notificar_comentario', {
+        const formData = new FormData(e.target);
+        const btnComentario = document.getElementById('btnComentario');
+        const textoComentario = document.getElementById('textoComentario');
+        const id_reporte = formData.get('id_reporte');
+        const id_usuario = window.usuarioId;
+
+        if (!btnComentario || !textoComentario) {
+            console.error('❌ Elementos del formulario no encontrados');
+            this.enviando = false;
+            return;
+        }
+
+        formData.append('id_usuario', id_usuario);
+
+        btnComentario.disabled = true;
+        btnComentario.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
+
+        try {
+            const resp = await fetch('../../controllers/reportecontrolador.php?action=agregar_comentario', {
                 method: 'POST',
                 body: formData
             });
+
+            const result = await resp.json();
+
+            if (result.success) {
+                textoComentario.value = '';
+
+                // 🆕 CORREGIDO: Actualizar contador correctamente
+                this.actualizarContadorCaracteres({ target: textoComentario });
+
+                // Recargar comentarios silenciosamente
+                await this.cargarComentarios(id_reporte);
+
+                console.log('✅ Comentario agregado correctamente');
+
+                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
+                await this.notificarComentario(id_reporte, id_usuario);
+
+                // 🆕 CORREGIDO: Actualizar contador en el post (si existe la función)
+                if (typeof window.actualizarContadorComentarios === 'function') {
+                    window.actualizarContadorComentarios(id_reporte);
+                }
+
+            } else {
+                console.error('Error al agregar comentario:', result.mensaje || result.error);
+                // 🆕 MOSTRAR ERROR AL USUARIO
+                alert('Error al agregar comentario: ' + (result.mensaje || result.error));
+            }
+        } catch (error) {
+            console.error('Error de conexión:', error);
+            alert('Error de conexión. Intenta nuevamente.');
+        } finally {
+            btnComentario.disabled = false;
+            btnComentario.innerHTML = '<i class="fas fa-paper-plane"></i> Publicar Comentario';
+            this.enviando = false;
         }
-    } catch (error) {
-        console.error('Error notificando comentario:', error);
-    }
-},
+    },
+
+    // ✅ FUNCIÓN PARA NOTIFICAR COMENTARIO
+    async notificarComentario(id_reporte, id_usuario_origen) {
+        try {
+            // Obtener el dueño del reporte
+            const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
+            const data = await resp.json();
+
+            if (data.success && data.id_usuario_destino && data.id_usuario_destino !== id_usuario_origen) {
+                const formData = new FormData();
+                formData.append('id_reporte', id_reporte);
+                formData.append('id_usuario_origen', id_usuario_origen);
+                formData.append('id_usuario_destino', data.id_usuario_destino);
+
+                await fetch('../../controllers/notificacion_controlador.php?action=notificar_comentario', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('✅ Notificación de comentario enviada');
+            }
+        } catch (error) {
+            console.error('Error notificando comentario:', error);
+        }
+    },
 
     abrirComentarios(id_reporte) {
         const comentarioIdReporte = document.getElementById('comentarioIdReporte');
@@ -218,6 +231,9 @@ async notificarComentario(id_reporte, id_usuario_origen) {
             const textoComentario = document.getElementById('textoComentario');
             if (textoComentario) {
                 textoComentario.focus();
+
+                // 🆕 INICIALIZAR CONTADOR
+                this.actualizarContadorCaracteres({ target: textoComentario });
             }
         }, 300);
     },
@@ -232,7 +248,7 @@ async notificarComentario(id_reporte, id_usuario_origen) {
         const textoComentario = document.getElementById('textoComentario');
         if (textoComentario) {
             textoComentario.value = '';
-            this.actualizarContadorCaracteres.call(textoComentario);
+            this.actualizarContadorCaracteres({ target: textoComentario });
         }
     },
 
@@ -246,11 +262,8 @@ async notificarComentario(id_reporte, id_usuario_origen) {
                 return 'Fecha no disponible';
             }
 
-            // Ajustar por zona horaria (UTC a hora local)
-            const fechaLocal = new Date(fecha.getTime() + (fecha.getTimezoneOffset() * 60000));
-
-            // Formatear en español
-            return fechaLocal.toLocaleDateString('es-ES', {
+            // Formatear en español (ya incluye ajuste de zona horaria)
+            return fecha.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -273,7 +286,40 @@ async notificarComentario(id_reporte, id_usuario_origen) {
     }
 };
 
+// 🆕 FUNCIÓN GLOBAL PARA ACTUALIZAR CONTADOR EN POSTS
+window.actualizarContadorComentarios = async function(id_reporte) {
+    try {
+        const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`);
+        const data = await resp.json();
+
+        // Buscar todos los posts con este id_reporte y actualizar contador
+        const posts = document.querySelectorAll(`[data-post-id="${id_reporte}"]`);
+        posts.forEach(post => {
+            const commentBtn = post.querySelector('.comment-btn');
+            if (commentBtn && data.total_comentarios !== undefined) {
+                const commentText = commentBtn.querySelector('span');
+                if (commentText) {
+                    commentText.textContent = `Comentarios (${data.total_comentarios})`;
+                }
+            }
+        });
+
+        console.log(`✅ Contador de comentarios actualizado: ${data.total_comentarios}`);
+    } catch (error) {
+        console.error('Error actualizando contador de comentarios:', error);
+    }
+};
+
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     ComentariosManager.inicializar();
+    console.log('🔄 ComentariosManager listo para inicializar...');
 });
+
+// 🆕 INICIALIZACIÓN ALTERNATIVA POR SI FALLA LA ANTERIOR
+setTimeout(() => {
+    if (!ComentariosManager.inicializado) {
+        console.log('🔄 Inicializando ComentariosManager con timeout...');
+        ComentariosManager.inicializar();
+    }
+}, 1000);
