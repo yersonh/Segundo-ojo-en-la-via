@@ -1,4 +1,4 @@
-// Panel.js - Versión corregida con sistema de likes funcionando
+// Panel.js - Versión sin sistema de notificaciones
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando panel...');
 
@@ -138,8 +138,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // CARGAR CONTENIDO ESPECÍFICO DE CADA VISTA
                     if (target === 'feedView') {
                         cargarFeedSuave();
-                    } else if (target === 'notificationsView') {
-                        cargarNotificacionesSuave();
                     } else if (target === 'profileView') {
                         // 🆕 CARGAR ESTADÍSTICAS DEL PERFIL
                         cargarEstadisticasPerfil();
@@ -419,122 +417,6 @@ async function cargarFeedSuave() {
             feedView.innerHTML = '<p style="text-align:center; color:var(--warning); padding: 20px;">Problema al cargar reportes.</p>';
         }
     }
-}
-
-// Versiones seguras de otras funciones
-async function cargarNotificacionesSuave() {
-    const notificationsView = document.getElementById('notificationsView');
-    if (!notificationsView) return;
-
-    notificationsView.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Cargando notificaciones...</p></div>';
-
-    try {
-        const resp = await fetch('../../controllers/notificacion_controlador.php?action=listar', {
-            credentials: 'include'
-        });
-
-        if (!resp.ok) {
-            if (resp.status === 401) {
-                notificationsView.innerHTML = '<div class="notification">Problema de sesión al cargar notificaciones</div>';
-                return;
-            }
-            throw new Error(`Error HTTP: ${resp.status}`);
-        }
-
-        const data = await resp.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-            notificationsView.innerHTML = `
-                <div class="no-notifications">
-                    <i class="fas fa-bell-slash" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
-                    <p>No tienes notificaciones</p>
-                </div>
-            `;
-            return;
-        }
-
-        notificationsView.innerHTML = '';
-        data.forEach(n => {
-            const div = document.createElement('div');
-            div.className = `notification ${n.leida ? 'leida' : 'no-leida'}`;
-
-            // Icono según el tipo de notificación
-            let icono = '🔔';
-            if (n.tipo === 'like') icono = '👍';
-            else if (n.tipo === 'comentario') icono = '💬';
-            else if (n.tipo === 'nuevo_reporte_usuario') icono = '📢';
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 10px;">
-                    <div style="flex: 1;">
-                        <div style="font-size: 20px; margin-bottom: 5px;">${icono}</div>
-                        <strong>${escapeHtml(n.origen_nombres || 'Sistema')}</strong>
-                        <div style="font-size:13px; color:#666; margin: 5px 0;">${escapeHtml(n.mensaje || n.tipo)}</div>
-                        <div style="font-size:12px; color:#999;">${new Date(n.fecha).toLocaleString('es-ES')}</div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        ${n.id_reporte ? `<button class="btn-small" onclick="verNotificacion(${n.id_notificacion}, ${n.id_reporte})">Ver</button>` : ''}
-                        <button class="btn-small ${n.leida ? 'btn-secondary' : 'btn-primary'}" onclick="marcarLeida(${n.id_notificacion}, this)">
-                            ${n.leida ? 'Leída' : 'Marcar leída'}
-                        </button>
-                    </div>
-                </div>
-            `;
-            notificationsView.appendChild(div);
-        });
-
-        // Botón para marcar todas como leídas
-        const markAllBtn = document.createElement('button');
-        markAllBtn.className = 'btn btn-primary';
-        markAllBtn.style.margin = '15px auto';
-        markAllBtn.style.display = 'block';
-        markAllBtn.innerHTML = '<i class="fas fa-check-double"></i> Marcar todas como leídas';
-        markAllBtn.onclick = marcarTodasLeidas;
-        notificationsView.appendChild(markAllBtn);
-
-    } catch (err) {
-        console.error(err);
-        notificationsView.innerHTML = '<div class="notification error">Error al cargar notificaciones</div>';
-    }
-}
-
-async function marcarTodasLeidas() {
-    try {
-        const resp = await fetch('../../controllers/notificacion_controlador.php?action=marcar_todas_leidas', {
-            method: 'POST',
-            credentials: 'include'
-        });
-
-        const result = await resp.json();
-        if (result.success) {
-            // Recargar notificaciones
-            cargarNotificacionesSuave();
-        }
-    } catch (error) {
-        console.error('Error marcando todas como leídas:', error);
-    }
-}
-
-// FUNCIÓN PARA OBTENER ID DE USUARIO
-async function obtenerUsuarioId() {
-    if (window.usuarioId) {
-        return window.usuarioId;
-    }
-
-    try {
-        const resp = await fetch('../../controllers/usuario_controlador.php?action=obtener_id', {
-            credentials: 'include'
-        });
-        const data = await resp.json();
-        if (data.success && data.id_usuario) {
-            window.usuarioId = data.id_usuario;
-            return data.id_usuario;
-        }
-    } catch (error) {
-        console.error('Error obteniendo ID de usuario:', error);
-    }
-
-    return 0;
 }
 
 // ✅ FUNCIÓN CORREGIDA PARA TOGGLE LIKE
@@ -916,38 +798,6 @@ function formatearFecha(fechaString) {
         });
     } catch (e) {
         return 'Fecha no disponible';
-    }
-}
-
-window.marcarLeida = async function(id, btn) {
-    try {
-        const form = new FormData();
-        form.append('id_notificacion', id);
-        const resp = await fetch('../../controllers/notificacion_controlador.php?action=marcar_leida', {
-            method: 'POST',
-            body: form,
-            credentials: 'include'
-        });
-        const r = await resp.json();
-        if (r.success) {
-            btn.textContent = 'Leída';
-            btn.disabled = true;
-        }
-    } catch (e) {
-        console.error(e);
-        alert('Error al marcar como leída');
-    }
-}
-
-window.verNotificacion = function(id_notificacion, id_reporte) {
-    if (id_reporte && id_reporte !== 'null') {
-        if (typeof ComentariosManager !== 'undefined' && ComentariosManager.abrirComentarios) {
-            ComentariosManager.abrirComentarios(id_reporte);
-        } else {
-            alert('Función de comentarios no disponible');
-        }
-    } else {
-        alert('No hay información de reporte asociada');
     }
 }
 
