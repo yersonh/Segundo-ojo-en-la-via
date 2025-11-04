@@ -163,7 +163,7 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
 
 <!-- Scripts tradicionales -->
 <script src="components/ConnectionManager.js"></script>
-<script src="components/background-sync-manager.js"></script>
+<!--<script src="components/background-sync-manager.js"></script>-->
 <script src="components/Buscador.js"></script>
 <script src="components/comentarios.js"></script>
 

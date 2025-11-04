@@ -331,5 +331,3 @@ self.addEventListener('notificationclick', (event) => {
         })
     );
 });
-
-console.log('✅ Service Worker Profesional cargado - Listo para operar');
