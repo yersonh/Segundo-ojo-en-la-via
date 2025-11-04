@@ -699,33 +699,405 @@ body, html {
 /* ============================================= */
 /* 5. VISTA: ALERTAS (NOTIFICACIONES) */
 /* ============================================= */
+/* 🎨 ESTILOS PARA EL SISTEMA DE NOTIFICACIONES */
 
-#notificationsView {
+/* DROPDOWN DE NOTIFICACIONES */
+.notifications-dropdown {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    width: 400px;
+    max-width: 90vw;
+    max-height: 70vh;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
     display: none;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
 }
 
-.notification {
-    background: var(--bg-primary);
-    padding: 16px;
-    border-radius: var(--border-radius);
-    margin-bottom: 12px;
-    box-shadow: var(--shadow);
-    border-left: 4px solid var(--primary);
-    transition: var(--transition);
-    border: 1px solid var(--border-color);
+.notifications-dropdown-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
 }
 
-.notification:hover {
-    transform: translateX(4px);
+.notifications-dropdown-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
 }
 
-.notification.unread {
-    border-left-color: var(--warning);
-    background: var(--bg-tertiary);
+.btn-close-dropdown {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
 }
 
-.notification.important {
-    border-left-color: var(--danger);
+.btn-close-dropdown:hover {
+    background: #e9ecef;
+    color: #e74c3c;
+}
+
+.notifications-dropdown-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ITEMS DE NOTIFICACIÓN */
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.3s ease;
+    gap: 12px;
+}
+
+.notification-item:hover {
+    background: #f8f9fa;
+}
+
+.notification-item.no-leida {
+    background: #f0f7ff;
+    border-left: 3px solid #3498db;
+}
+
+.notification-item.leida {
+    opacity: 0.8;
+}
+
+.notification-icon {
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.notification-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+}
+
+.btn-notification-action {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-notification-action:hover {
+    background: #2980b9;
+}
+
+.btn-mark-read {
+    background: #28a745;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: all 0.3s ease;
+}
+
+.btn-mark-read:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+/* FOOTER DEL DROPDOWN */
+.notification-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-view-all, .btn-mark-all-read {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.btn-view-all {
+    background: #3498db;
+    color: white;
+}
+
+.btn-view-all:hover {
+    background: #2980b9;
+}
+
+.btn-mark-all-read {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-mark-all-read:hover {
+    background: #5a6268;
+}
+
+/* ESTADOS VACÍO Y CARGA */
+.notification-empty, .notification-loading {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.notification-empty i, .notification-loading i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+.loading-spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+/* NOTIFICACIONES EN VISTA COMPLETA */
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    background: white;
+}
+
+.notifications-header h2 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.notifications-list {
+    padding: 20px;
+}
+
+.notification-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #3498db;
+}
+
+.notification-card.no-leida {
+    border-left-color: #e74c3c;
+    background: #fff5f5;
+}
+
+.notification-card.leida {
+    opacity: 0.8;
+    border-left-color: #95a5a6;
+}
+
+.notification-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.notification-type {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.notification-type-text {
+    text-transform: capitalize;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.notification-card-body {
+    margin-bottom: 15px;
+}
+
+.notification-message {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.notification-from {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.notification-card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.notification-card-actions .btn-primary,
+.notification-card-actions .btn-secondary {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* TOAST NOTIFICATIONS */
+.notification-toast, .success-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 350px;
+}
+
+.notification-toast.show, .success-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-icon {
+    font-size: 1.2rem;
+    color: #3498db;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-message {
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.toast-close:hover {
+    background: #f8f9fa;
+    color: #e74c3c;
+}
+
+.success-toast {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .notifications-dropdown {
+        width: 95vw;
+        right: 2.5vw;
+        left: 2.5vw;
+    }
+
+    .notification-card-actions {
+        flex-direction: column;
+    }
+
+    .notifications-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}
+
+/* ANIMATIONS */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* BADGE DE NOTIFICACIONES */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+    z-index: 10;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 /* ============================================= */

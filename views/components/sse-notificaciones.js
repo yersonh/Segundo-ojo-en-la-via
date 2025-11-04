@@ -1,4 +1,3 @@
-// components/sse-notificaciones.js - VERSIÓN UNIFICADA
 class SSENotificacionesManager {
     constructor() {
         this.eventSource = null;
@@ -8,12 +7,19 @@ class SSENotificacionesManager {
         this.isConnected = false;
         this.badgeElement = document.getElementById('notificationBadge');
         this.userRole = null;
+        this.manejadoresPersonalizados = [];
     }
 
     inicializar() {
         console.log('🔔 Inicializando SSE unificado para notificaciones...');
         this.conectar();
         this.configurarEventosVisibilidad();
+    }
+
+    // 🎛️ REGISTRAR MANEJADORES PERSONALIZADOS
+    registrarManejador(evento, manejador) {
+        this.manejadoresPersonalizados.push({ evento, manejador });
+        console.log(`🎯 Manejador registrado para evento: ${evento}`);
     }
 
     configurarEventosVisibilidad() {
@@ -42,12 +48,18 @@ class SSENotificacionesManager {
                 console.log('✅ Conexión SSE unificada establecida');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('conexion_establecida', {});
             };
 
             this.eventSource.addEventListener('ping', (event) => {
                 const data = JSON.parse(event.data);
                 console.log('📡 Ping SSE recibido', data);
                 this.userRole = data.user_role;
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('ping', data);
             });
 
             // NOTIFICACIONES PARA USUARIOS NORMALES
@@ -58,6 +70,9 @@ class SSENotificacionesManager {
                 if (data.type === 'nuevas_notificaciones' && data.for_user) {
                     this.manejarNuevasNotificacionesUsuario(data);
                 }
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('notificacion', data);
             });
 
             // NOTIFICACIONES PARA ADMIN
@@ -65,24 +80,49 @@ class SSENotificacionesManager {
                 const data = JSON.parse(event.data);
                 console.log('🚨 Notificación admin recibida:', data);
                 this.manejarNuevoReporteAdmin(data);
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('nuevo_reporte', data);
             });
 
             this.eventSource.addEventListener('connected', (event) => {
                 const data = JSON.parse(event.data);
                 console.log('✅ Conectado al servidor SSE, user_id:', data.user_id, 'rol:', data.user_role);
                 this.userRole = data.user_role;
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('connected', data);
             });
 
             this.eventSource.onerror = (error) => {
                 console.error('❌ Error en conexión SSE:', error);
                 this.isConnected = false;
                 this.manejarErrorConexion();
+
+                // Notificar a los manejadores personalizados
+                this.ejecutarManejadores('error', { error });
             };
 
         } catch (error) {
             console.error('❌ Error inicializando SSE:', error);
             this.manejarErrorConexion();
+
+            // Notificar a los manejadores personalizados
+            this.ejecutarManejadores('error_inicializacion', { error });
         }
+    }
+
+    // 🎯 EJECUTAR MANEJADORES PERSONALIZADOS
+    ejecutarManejadores(evento, data) {
+        this.manejadoresPersonalizados.forEach(({ evento: evt, manejador }) => {
+            if (evt === evento) {
+                try {
+                    manejador(data);
+                } catch (error) {
+                    console.error(`❌ Error en manejador personalizado para ${evento}:`, error);
+                }
+            }
+        });
     }
 
     manejarNuevasNotificacionesUsuario(data) {

@@ -1338,12 +1338,14 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
             document.getElementById('feedView').style.display = 'block';
         });
     </script>
-
+    <script src="components/sse-notificaciones.js"></script>
+    <script src="components/notificaciones.js"></script>
+    <script src="components/comentarios.js"></script>
     <script src="components/panel.js"></script>
     <script type="module" src="components/mapa/index.js"></script>
     <script type="module" src="components/formulario/index.js"></script>
-    <script src="components/comentarios.js"></script>
-    <script src="components/sse-notificaciones.js"></script>
+
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
