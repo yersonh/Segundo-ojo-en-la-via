@@ -5,6 +5,7 @@ export class ImageManager {
     constructor(formManager) {
         this.formManager = formManager;
         this.selectedFiles = new DataTransfer();
+        this.fileReferences = new Map(); // Mapa para mantener referencia a los File objects
     }
 
     initialize() {
@@ -18,13 +19,11 @@ export class ImageManager {
         console.log('🔍 ImageManager - Elementos:', { fileInput, fileBtn });
 
         if (fileInput && fileBtn) {
-            // CONECTAR BOTÓN AL INPUT FILE
             fileBtn.addEventListener('click', () => {
                 console.log('🖱️ Botón clickeado - Abriendo selector de archivos...');
                 fileInput.click();
             });
 
-            // Manejar selección de archivos
             fileInput.addEventListener('change', (e) => {
                 console.log('📁 Archivos seleccionados:', e.target.files);
                 this.handleFileSelection(e);
@@ -43,11 +42,9 @@ export class ImageManager {
         const previewContainer = document.querySelector('.preview');
         const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
 
-        // SOLUCIÓN: NO limpiar previews existentes, solo procesar nuevos archivos
         if (files && files.length > 0) {
             sinImagen.style.display = 'none';
 
-            // Verificar límite total (existentes + nuevos)
             const existingPreviews = previewContainer.querySelectorAll('.imagen-previa').length;
             const totalAfterAddition = existingPreviews + files.length;
 
@@ -59,12 +56,12 @@ export class ImageManager {
 
             this.processFiles(files, previewContainer, sinImagen);
         }
-        // No cambiar el estado de "sin imagen" si ya hay previews existentes
     }
 
     clearPreviews() {
         const previewContainer = document.querySelector('.preview');
         previewContainer.querySelectorAll('.imagen-previa').forEach(img => img.remove());
+        this.fileReferences.clear(); // Limpiar referencias
 
         const previewImg = document.querySelector(FormConstants.SELECTORS.PREVIEW_IMG);
         previewImg.style.display = 'none';
@@ -85,7 +82,6 @@ export class ImageManager {
             this.showFileSuccess(validFilesCount);
             this.updateFileInput(); // Actualizar el input con todos los archivos
         }
-        // No mostrar "sin imagen" si hay previews existentes
     }
 
     validateFile(file) {
@@ -108,6 +104,7 @@ export class ImageManager {
         reader.onload = (e) => {
             const imgContainer = document.createElement('div');
             imgContainer.className = 'imagen-previa';
+            imgContainer.dataset.fileId = `file-${Date.now()}-${index}`; // ID único
             imgContainer.style.cssText = `
                 position: relative;
                 display: inline-block;
@@ -136,6 +133,9 @@ export class ImageManager {
             previewContainer.insertBefore(imgContainer, document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN));
 
             FormHelpers.showElement(imgContainer);
+
+            // Guardar referencia al File object original
+            this.fileReferences.set(imgContainer.dataset.fileId, file);
         };
 
         reader.readAsDataURL(file);
@@ -187,6 +187,11 @@ export class ImageManager {
     }
 
     removeImagePreview(container) {
+        // Eliminar la referencia del archivo
+        if (container.dataset.fileId) {
+            this.fileReferences.delete(container.dataset.fileId);
+        }
+
         container.remove();
         this.updateFileInput();
 
@@ -200,26 +205,15 @@ export class ImageManager {
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
         const dataTransfer = new DataTransfer();
 
-        // Agregar TODOS los archivos de TODOS los previews existentes
-        const previewContainer = document.querySelector('.preview');
-        const existingPreviews = Array.from(previewContainer.querySelectorAll('.imagen-previa img'));
-
-        // Por cada preview existente, agregar al DataTransfer
-        existingPreviews.forEach((img, index) => {
-            // Crear un archivo desde la data URL (esto es simplificado)
-            // En un caso real, necesitarías mantener referencia a los File objects originales
-            if (img.src.startsWith('data:')) {
-                // Convertir data URL a blob y luego a File
-                fetch(img.src)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const file = new File([blob], `image_${index}.jpg`, { type: 'image/jpeg' });
-                        dataTransfer.items.add(file);
-                    });
-            }
+        // Agregar TODOS los archivos de las referencias
+        this.fileReferences.forEach((file, fileId) => {
+            dataTransfer.items.add(file);
         });
 
         fileInput.files = dataTransfer.files;
+
+        console.log('📁 Archivos en input:', fileInput.files.length);
+        console.log('📁 Referencias guardadas:', this.fileReferences.size);
     }
 
     showFileError(message) {
@@ -272,5 +266,15 @@ export class ImageManager {
 
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
         fileInput.value = '';
+    }
+
+    // Método para agregar archivos desde la cámara (si es necesario)
+    addFileFromCamera(file) {
+        const previewContainer = document.querySelector('.preview');
+        const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
+
+        sinImagen.style.display = 'none';
+        this.createImagePreview(file, previewContainer, 'camera');
+        this.updateFileInput();
     }
 }
