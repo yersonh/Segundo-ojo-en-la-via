@@ -1114,6 +1114,211 @@ window.debugSistemaMapa = function() {
     }
 };
 </script>
+<script>
+// FUNCIÓN MEJORADA PARA GEOLOCALIZACIÓN EN MÓVIL
+function centrarEnUsuarioConAjuste() {
+    if (!navigator.geolocation) {
+        alert('La geolocalización no es soportada por tu navegador');
+        return;
+    }
 
+    // Agregar clase de carga
+    const mapContainer = document.querySelector('.leaflet-container');
+    if (mapContainer) {
+        mapContainer.classList.add('centrado-en-usuario');
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            if (window.mapaSistema && window.mapaSistema.getMap) {
+                const map = window.mapaSistema.getMap();
+                const esMovil = window.innerWidth <= 768;
+
+                // Calcular el desplazamiento necesario
+                let offsetY = 0;
+                if (esMovil) {
+                    if (window.innerWidth <= 480) {
+                        offsetY = -180; // Pantallas muy pequeñas
+                    } else {
+                        offsetY = -150; // Móviles normales
+                    }
+                } else {
+                    offsetY = -80; // Computador
+                }
+
+                // Centrar en la ubicación
+                map.setView([lat, lng], 16);
+
+                // Aplicar desplazamiento después de un pequeño delay
+                setTimeout(() => {
+                    map.panBy([0, offsetY]);
+
+                    // Agregar marcador
+                    L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'mi-ubicacion-marcador',
+                            html: '📍<div class="pulso-ubicacion"></div>',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
+                        })
+                    })
+                    .addTo(map)
+                    .bindPopup('<div class="popup-mi-ubicacion"><strong>📍 Mi ubicación actual</strong><br><small>Geolocalización</small></div>')
+                    .openPopup();
+
+                }, 400);
+            }
+        },
+        function(error) {
+            // Remover clase en caso de error
+            const mapContainer = document.querySelector('.leaflet-container');
+            if (mapContainer) {
+                mapContainer.classList.remove('centrado-en-usuario');
+            }
+
+            let message = 'Error obteniendo ubicación: ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message += 'Permiso denegado. Por favor, permite el acceso a la ubicación en ajustes de tu navegador.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message += 'Ubicación no disponible. Verifica tu conexión GPS.';
+                    break;
+                case error.TIMEOUT:
+                    message += 'Tiempo de espera agotado. Intenta nuevamente.';
+                    break;
+                default:
+                    message += 'Error desconocido.';
+            }
+            alert(message);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        }
+    );
+}
+
+// Estilos para la geolocalización mejorada
+const geolocationStyle = document.createElement('style');
+geolocationStyle.textContent = `
+    /* Estilos para geolocalización en móvil */
+    @media (max-width: 768px) {
+        .leaflet-container.centrado-en-usuario {
+            padding-top: 120px;
+        }
+
+        .leaflet-top.leaflet-left {
+            top: 70px !important;
+        }
+
+        .leaflet-control-zoom {
+            margin-top: 70px !important;
+        }
+
+        .leaflet-control-locate {
+            margin-top: 120px !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .leaflet-container.centrado-en-usuario {
+            padding-top: 140px;
+        }
+
+        .leaflet-top.leaflet-left {
+            top: 80px !important;
+        }
+
+        .leaflet-control-locate {
+            margin-top: 140px !important;
+        }
+    }
+
+    /* Efectos visuales del marcador de ubicación */
+    .mi-ubicacion-marcador {
+        z-index: 1000;
+        position: relative;
+    }
+
+    .pulso-ubicacion {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        width: 50px;
+        height: 50px;
+        border: 3px solid #007bff;
+        border-radius: 50%;
+        animation: pulso-ubicacion 2s infinite;
+        pointer-events: none;
+    }
+
+    @keyframes pulso-ubicacion {
+        0% {
+            transform: scale(0.8);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    .popup-mi-ubicacion {
+        text-align: center;
+        padding: 5px;
+    }
+
+    .popup-mi-ubicacion strong {
+        color: #007bff;
+    }
+
+    .popup-mi-ubicacion small {
+        color: #666;
+    }
+`;
+document.head.appendChild(geolocationStyle);
+
+// Conectar con el sistema existente cuando el mapa esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar a que el mapa se inicialice
+    const checkMapReady = setInterval(() => {
+        if (window.mapaSistema && window.mapaSistema.getMap && window.mapaSistema.getMap()) {
+            clearInterval(checkMapReady);
+            console.log('✅ Mapa listo - Conectando geolocalización mejorada');
+
+            // Si existe un botón de geolocalización, conectar la función mejorada
+            const btnGeolocation = document.querySelector('.leaflet-control-locate a, #btnGeolocation');
+            if (btnGeolocation) {
+                btnGeolocation.addEventListener('click', function(e) {
+                    // Si es el control de Leaflet, usar nuestro comportamiento mejorado
+                    if (this.closest('.leaflet-control-locate')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        centrarEnUsuarioConAjuste();
+                    }
+                });
+            }
+
+            // También exponer la función globalmente por si necesitas llamarla desde otros lugares
+            window.centrarEnUsuarioConAjuste = centrarEnUsuarioConAjuste;
+        }
+    }, 500);
+});
+
+// Función para probar diferentes ajustes
+window.ajustarGeolocalizacion = function(offsetY) {
+    if (window.mapaSistema && window.mapaSistema.getMap) {
+        const map = window.mapaSistema.getMap();
+        const center = map.getCenter();
+        map.panBy([0, offsetY]);
+        console.log(`🔧 Ajuste aplicado: ${offsetY}px`);
+    }
+};
+</script>
 </body>
 </html>
