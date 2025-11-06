@@ -769,7 +769,7 @@ body.barra-oculta .leaflet-bottom.leaflet-right .leaflet-control {
     .leaflet-control-geolocation,
     .leaflet-control-locate,
     .leaflet-bottom.leaflet-right .leaflet-control {
-        margin-bottom: 70px !important; /* súbelo más arriba */
+        margin-bottom: 40px !important; /* súbelo más arriba */
         margin-right: 25px !important;   /* muévelo un poco a la izquierda */
         transition: all 0.3s ease;
     }
