@@ -4,7 +4,8 @@ import { FormHelpers } from './utils/Helpers.js';
 export class ImageManager {
     constructor(formManager) {
         this.formManager = formManager;
-        this.currentFiles = []; // Array para mantener TODOS los archivos
+        this.selectedFiles = new DataTransfer();
+        this.fileReferences = new Map(); // Mapa para mantener referencia a los File objects
     }
 
     initialize() {
@@ -44,58 +45,44 @@ export class ImageManager {
         if (files && files.length > 0) {
             sinImagen.style.display = 'none';
 
-            // Verificar límite total
-            const totalAfterAddition = this.currentFiles.length + files.length;
+            const existingPreviews = previewContainer.querySelectorAll('.imagen-previa').length;
+            const totalAfterAddition = existingPreviews + files.length;
+
             if (totalAfterAddition > FormConstants.MAX_IMAGES) {
-                this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas. Ya tienes ${this.currentFiles.length} imágenes.`);
+                this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas. Ya tienes ${existingPreviews} imágenes.`);
                 e.target.value = '';
                 return;
             }
 
-            this.processFiles(files, previewContainer);
-            e.target.value = ''; // Limpiar input para permitir seleccionar los mismos archivos otra vez
+            this.processFiles(files, previewContainer, sinImagen);
         }
     }
 
     clearPreviews() {
         const previewContainer = document.querySelector('.preview');
         previewContainer.querySelectorAll('.imagen-previa').forEach(img => img.remove());
-        this.currentFiles = []; // Limpiar array de archivos
+        this.fileReferences.clear(); // Limpiar referencias
+        this.selectedFiles = new DataTransfer(); // Limpiar selectedFiles también
 
         const previewImg = document.querySelector(FormConstants.SELECTORS.PREVIEW_IMG);
         previewImg.style.display = 'none';
         previewImg.src = '';
     }
 
-    processFiles(files, previewContainer) {
+    processFiles(files, previewContainer, sinImagen) {
         let validFilesCount = 0;
 
-        for (const file of Array.from(files)) {
+        for (const [index, file] of Array.from(files).entries()) {
             if (!this.validateFile(file)) continue;
 
-            // Verificar si el archivo ya existe (evitar duplicados)
-            if (this.isFileAlreadyAdded(file)) {
-                console.log('⚠️ Archivo duplicado:', file.name);
-                continue;
-            }
-
             validFilesCount++;
-            this.currentFiles.push(file); // Agregar al array de archivos
-            this.createImagePreview(file, previewContainer, this.currentFiles.length - 1);
+            this.createImagePreview(file, previewContainer, index);
         }
 
         if (validFilesCount > 0) {
             this.showFileSuccess(validFilesCount);
-            this.updateFileInput(); // Actualizar el input file
+            this.updateFileInput(); // Actualizar el input con todos los archivos
         }
-    }
-
-    isFileAlreadyAdded(file) {
-        return this.currentFiles.some(existingFile =>
-            existingFile.name === file.name &&
-            existingFile.size === file.size &&
-            existingFile.lastModified === file.lastModified
-        );
     }
 
     validateFile(file) {
@@ -118,7 +105,7 @@ export class ImageManager {
         reader.onload = (e) => {
             const imgContainer = document.createElement('div');
             imgContainer.className = 'imagen-previa';
-            imgContainer.dataset.fileIndex = index; // Guardar índice del archivo
+            imgContainer.dataset.fileId = `file-${Date.now()}-${index}`; // ID único
             imgContainer.style.cssText = `
                 position: relative;
                 display: inline-block;
@@ -147,6 +134,12 @@ export class ImageManager {
             previewContainer.insertBefore(imgContainer, document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN));
 
             FormHelpers.showElement(imgContainer);
+
+            // Guardar referencia al File object original
+            this.fileReferences.set(imgContainer.dataset.fileId, file);
+
+            // ACTUALIZACIÓN CRÍTICA: Agregar también a selectedFiles
+            this.selectedFiles.items.add(file);
         };
 
         reader.readAsDataURL(file);
@@ -198,18 +191,25 @@ export class ImageManager {
     }
 
     removeImagePreview(container) {
-        const fileIndex = parseInt(container.dataset.fileIndex);
+        // Eliminar la referencia del archivo
+        if (container.dataset.fileId) {
+            const file = this.fileReferences.get(container.dataset.fileId);
+            this.fileReferences.delete(container.dataset.fileId);
 
-        // Eliminar el archivo del array
-        if (!isNaN(fileIndex) && fileIndex >= 0 && fileIndex < this.currentFiles.length) {
-            this.currentFiles.splice(fileIndex, 1);
+            // ACTUALIZACIÓN CRÍTICA: Remover también de selectedFiles
+            if (file) {
+                const newDataTransfer = new DataTransfer();
+                Array.from(this.selectedFiles.files).forEach(existingFile => {
+                    if (existingFile !== file) {
+                        newDataTransfer.items.add(existingFile);
+                    }
+                });
+                this.selectedFiles = newDataTransfer;
+            }
         }
 
         container.remove();
         this.updateFileInput();
-
-        // Actualizar índices de los previews restantes
-        this.updatePreviewIndexes();
 
         const previewContainer = document.querySelector('.preview');
         if (previewContainer.querySelectorAll('.imagen-previa').length === 0) {
@@ -217,29 +217,20 @@ export class ImageManager {
         }
     }
 
-    updatePreviewIndexes() {
-        const previews = document.querySelectorAll('.imagen-previa');
-        previews.forEach((preview, index) => {
-            preview.dataset.fileIndex = index;
-        });
-    }
-
     updateFileInput() {
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
         const dataTransfer = new DataTransfer();
 
-        // Agregar TODOS los archivos del array al DataTransfer
-        this.currentFiles.forEach(file => {
+        // Agregar TODOS los archivos de las referencias
+        this.fileReferences.forEach((file, fileId) => {
             dataTransfer.items.add(file);
         });
 
         fileInput.files = dataTransfer.files;
 
-        console.log('📁 Archivos actuales:', this.currentFiles.length);
         console.log('📁 Archivos en input:', fileInput.files.length);
-
-        // Actualizar texto del botón
-        this.updateFileButtonText();
+        console.log('📁 Referencias guardadas:', this.fileReferences.size);
+        console.log('📁 SelectedFiles:', this.selectedFiles.files.length); // Debug
     }
 
     showFileError(message) {
@@ -261,60 +252,51 @@ export class ImageManager {
             `✅ ${fileCount}${FormConstants.MESSAGES.SUCCESS.IMAGES_LOADED}`;
 
         this.formManager.showAlert(message);
+
+        if (fileCount > 1) {
+            this.updateFileButtonText(fileCount);
+        }
     }
 
-    updateFileButtonText() {
+    updateFileButtonText(fileCount) {
         const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
         if (fileBtn) {
-            const totalFiles = this.currentFiles.length;
+            fileBtn.innerHTML = `📁 ${fileCount} archivos seleccionados`;
+            FormHelpers.addTemporaryStyle(
+                fileBtn,
+                {
+                    background: FormConstants.STYLES.SUCCESS_COLOR,
+                    color: 'white'
+                },
+                3000
+            );
 
-            if (totalFiles > 0) {
-                fileBtn.innerHTML = `📁 ${totalFiles} archivo${totalFiles > 1 ? 's' : ''} seleccionado${totalFiles > 1 ? 's' : ''}`;
-                FormHelpers.addTemporaryStyle(
-                    fileBtn,
-                    {
-                        background: FormConstants.STYLES.SUCCESS_COLOR,
-                        color: 'white'
-                    },
-                    2000
-                );
-            } else {
+            setTimeout(() => {
                 fileBtn.innerHTML = '📁 Seleccionar Archivos';
-            }
+            }, 3000);
         }
     }
 
     clearImages() {
         this.clearPreviews();
         document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN).style.display = 'block';
+
+        const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
+        fileInput.value = '';
     }
 
-    // Método para agregar archivos desde la cámara
+    // Método para agregar archivos desde la cámara (si es necesario)
     addFileFromCamera(file) {
         const previewContainer = document.querySelector('.preview');
         const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
 
-        // Verificar límite
-        if (this.currentFiles.length >= FormConstants.MAX_IMAGES) {
-            this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas`);
-            return;
-        }
-
         sinImagen.style.display = 'none';
-        this.currentFiles.push(file);
-        this.createImagePreview(file, previewContainer, this.currentFiles.length - 1);
+        this.createImagePreview(file, previewContainer, 'camera');
         this.updateFileInput();
-
-        this.showFileSuccess(1);
     }
 
-    // Método para obtener los archivos actuales
-    getFiles() {
-        return this.currentFiles;
-    }
-
-    // Método para verificar si hay imágenes
-    hasImages() {
-        return this.currentFiles.length > 0;
+    // Método para obtener los archivos seleccionados (para el formulario)
+    getSelectedFiles() {
+        return this.selectedFiles.files;
     }
 }
