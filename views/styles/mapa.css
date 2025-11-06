@@ -764,3 +764,13 @@ body.barra-oculta .leaflet-control-locate,
 body.barra-oculta .leaflet-bottom.leaflet-right .leaflet-control {
     margin-bottom: 40px !important; /* Vuelve a bajarlo cuando la barra esté oculta */
 }
+/* === AJUSTE DEFINITIVO SOLO PARA CELULARES === */
+@media (max-width: 768px) {
+    .leaflet-control-geolocation,
+    .leaflet-control-locate,
+    .leaflet-bottom.leaflet-right .leaflet-control {
+        margin-bottom: 160px !important; /* súbelo más arriba */
+        margin-right: 25px !important;   /* muévelo un poco a la izquierda */
+        transition: all 0.3s ease;
+    }
+}
