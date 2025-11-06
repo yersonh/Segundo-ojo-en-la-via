@@ -747,3 +747,57 @@ button:hover {
         font-size: 13px;
     }
 }
+/* ========== AJUSTES ESPECÍFICOS PARA GEOLOCALIZACIÓN EN MÓVIL ========== */
+
+/* Cuando el mapa está centrado en geolocalización */
+.mapa-centrado-usuario {
+    padding-top: 150px !important; /* Empuja el contenido hacia abajo */
+}
+
+/* Ajuste específico para el contenedor del mapa en móvil */
+@media (max-width: 768px) {
+    #map {
+        position: relative;
+    }
+
+    /* Cuando se activa la geolocalización, crear espacio arriba */
+    .leaflet-container.centrado-en-usuario {
+        padding-top: 120px;
+    }
+
+    /* Asegurar que los controles sean accesibles */
+    .leaflet-top.leaflet-left {
+        top: 70px !important;
+    }
+
+    .leaflet-control-zoom {
+        margin-top: 70px !important;
+    }
+
+    /* El botón de geolocalización mismo */
+    .leaflet-control-locate {
+        margin-top: 120px !important;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .leaflet-container.centrado-en-usuario {
+        padding-top: 140px;
+    }
+
+    .leaflet-top.leaflet-left {
+        top: 80px !important;
+    }
+
+    .leaflet-control-locate {
+        margin-top: 140px !important;
+    }
+}
+
+/* Para cuando el panel está abierto en móvil */
+@media (max-width: 768px) {
+    #panel.active ~ #map .leaflet-container.centrado-en-usuario {
+        padding-top: 80px; /* Menos espacio cuando el panel está abierto */
+    }
+}
