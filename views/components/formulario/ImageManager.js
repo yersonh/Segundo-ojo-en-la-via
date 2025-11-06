@@ -4,7 +4,7 @@ import { FormHelpers } from './utils/Helpers.js';
 export class ImageManager {
     constructor(formManager) {
         this.formManager = formManager;
-        this.selectedFiles = new DataTransfer(); // fuente de verdad de archivos
+        this.selectedFiles = new DataTransfer();
     }
 
     initialize() {
@@ -12,87 +12,53 @@ export class ImageManager {
     }
 
     setupEventListeners() {
-        const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
+    const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
+    const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
 
-        console.log('🔍 ImageManager - Elementos:', { fileInput, fileBtn });
+    console.log('🔍 ImageManager - Elementos:', { fileInput, fileBtn });
 
-        if (fileInput && fileBtn) {
-            fileBtn.addEventListener('click', () => {
-                console.log('🖱️ Botón clickeado - Abriendo selector de archivos...');
-                fileInput.click();
-            });
+    if (fileInput && fileBtn) {
+        //CONECTAR BOTÓN AL INPUT FILE
+        fileBtn.addEventListener('click', () => {
+            console.log('🖱️ Botón clickeado - Abriendo selector de archivos...');
+            fileInput.click(); // Esto abre el selector nativo
+        });
 
-            // Manejar selección de archivos: **append**, no replace
-            fileInput.addEventListener('change', (e) => {
-                console.log('📁 Archivos seleccionados (raw):', e.target.files);
-                this.handleFileSelection(e);
-            });
-        } else {
-            console.error('Elementos no encontrados:', {
-                fileInput: !!fileInput,
-                fileBtn: !!fileBtn
-            });
-        }
+        // Manejar selección de archivos
+        fileInput.addEventListener('change', (e) => {
+            console.log('📁 Archivos seleccionados:', e.target.files);
+            this.handleFileSelection(e);
+        });
+
+    } else {
+        console.error('Elementos no encontrados:', {
+            fileInput: !!fileInput,
+            fileBtn: !!fileBtn
+        });
     }
+}
 
     handleFileSelection(e) {
-        const newFiles = Array.from(e.target.files || []);
+        const files = e.target.files;
         const previewContainer = document.querySelector('.preview');
         const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
 
-        if (!sinImagen || !previewContainer) {
-            console.error('Contenedores de previsualización no encontrados');
-            return;
-        }
+        this.clearPreviews();
 
-        // Validar límite total: (archivos ya en selectedFiles) + (nuevos) <= MAX_IMAGES
-        const totalAfter = this.selectedFiles.files.length + newFiles.length;
-        if (totalAfter > FormConstants.MAX_IMAGES) {
-            this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas (ya tiene ${this.selectedFiles.files.length})`);
-            // limpiar input para evitar confusión
-            e.target.value = '';
-            return;
-        }
+        if (files && files.length > 0) {
+            sinImagen.style.display = 'none';
 
-        if (newFiles.length === 0) {
-            // nada seleccionado
-            if (this.selectedFiles.files.length === 0) {
+            if (files.length > FormConstants.MAX_IMAGES) {
+                this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas`);
+                e.target.value = '';
                 sinImagen.style.display = 'block';
+                return;
             }
-            return;
+
+            this.processFiles(files, previewContainer, sinImagen);
+        } else {
+            sinImagen.style.display = 'block';
         }
-
-        // Procesar únicamente los archivos nuevos válidos:
-        const validNewFiles = [];
-        for (const file of newFiles) {
-            if (!this.validateFile(file)) continue;
-            validNewFiles.push(file);
-        }
-
-        if (validNewFiles.length === 0) {
-            e.target.value = '';
-            if (this.selectedFiles.files.length === 0) sinImagen.style.display = 'block';
-            return;
-        }
-
-        // Añadir nuevos archivos al DataTransfer (fuente de verdad)
-        for (const file of validNewFiles) {
-            this.selectedFiles.items.add(file);
-        }
-
-        // Actualizar el input físico con el DataTransfer combinado
-        const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        fileInput.files = this.selectedFiles.files;
-
-        // Ocultar mensaje "sin imagen"
-        sinImagen.style.display = 'none';
-
-        // Crear vistas en el DOM para los nuevos archivos
-        this.processFiles(validNewFiles, previewContainer, sinImagen);
-
-        // Limpiar el input nativo para que futuras selecciones no concatenten dos veces el mismo FileList por error
-        e.target.value = '';
     }
 
     clearPreviews() {
@@ -100,29 +66,27 @@ export class ImageManager {
         previewContainer.querySelectorAll('.imagen-previa').forEach(img => img.remove());
 
         const previewImg = document.querySelector(FormConstants.SELECTORS.PREVIEW_IMG);
-        if (previewImg) {
-            previewImg.style.display = 'none';
-            previewImg.src = '';
-        }
+        previewImg.style.display = 'none';
+        previewImg.src = '';
     }
 
-    processFiles(files, previewContainer, sinImagen) {
-        let validFilesCount = 0;
+   processFiles(files, previewContainer, sinImagen) {
+    let validFilesCount = 0;
 
-        for (const file of files) {
-            // validateFile ya fue aplicado en handleFileSelection, pero doble chequeo no hace daño
-            if (!this.validateFile(file)) continue;
+    // Cambia forEach por for...of
+    for (const [index, file] of Array.from(files).entries()) {
+        if (!this.validateFile(file)) continue;
 
-            validFilesCount++;
-            this.createImagePreview(file, previewContainer);
-        }
-
-        if (validFilesCount > 0) {
-            this.showFileSuccess(validFilesCount);
-        } else {
-            sinImagen.style.display = 'block';
-        }
+        validFilesCount++;
+        this.createImagePreview(file, previewContainer, index);
     }
+
+    if (validFilesCount > 0) {
+        this.showFileSuccess(validFilesCount);
+    } else {
+        sinImagen.style.display = 'block';
+    }
+}
 
     validateFile(file) {
         if (!FormHelpers.isValidImageFile(file)) {
@@ -138,15 +102,12 @@ export class ImageManager {
         return true;
     }
 
-    createImagePreview(file, previewContainer) {
+    createImagePreview(file, previewContainer, index) {
         const reader = new FileReader();
-        const identifier = `${file.name}_${file.size}_${file.lastModified}`;
 
         reader.onload = (e) => {
             const imgContainer = document.createElement('div');
             imgContainer.className = 'imagen-previa';
-            imgContainer.dataset.fileId = identifier; // asociación con el File
-
             imgContainer.style.cssText = `
                 position: relative;
                 display: inline-block;
@@ -159,7 +120,6 @@ export class ImageManager {
 
             const img = document.createElement('img');
             img.src = e.target.result;
-            img.alt = file.name;
             img.style.cssText = `
                 width: 80px;
                 height: 80px;
@@ -173,13 +133,7 @@ export class ImageManager {
 
             imgContainer.appendChild(img);
             imgContainer.appendChild(deleteBtn);
-            // Insertar antes del texto "sin imagen" si existe
-            const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
-            if (sinImagen && sinImagen.parentElement) {
-                previewContainer.insertBefore(imgContainer, sinImagen);
-            } else {
-                previewContainer.appendChild(imgContainer);
-            }
+            previewContainer.insertBefore(imgContainer, document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN));
 
             FormHelpers.showElement(imgContainer);
         };
@@ -233,28 +187,8 @@ export class ImageManager {
     }
 
     removeImagePreview(container) {
-        // obtener id del archivo asociado
-        const fileId = container.dataset.fileId;
-        if (fileId) {
-            // reconstruir DataTransfer sin el archivo eliminado
-            const newDT = new DataTransfer();
-            for (const file of this.selectedFiles.files) {
-                const id = `${file.name}_${file.size}_${file.lastModified}`;
-                if (id !== fileId) {
-                    newDT.items.add(file);
-                }
-            }
-            this.selectedFiles = newDT;
-
-            // actualizar input físico
-            const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-            if (fileInput) {
-                fileInput.files = this.selectedFiles.files;
-            }
-        }
-
-        // quitar vista
         container.remove();
+        this.updateFileInput();
 
         const previewContainer = document.querySelector('.preview');
         if (previewContainer.querySelectorAll('.imagen-previa').length === 0) {
@@ -263,11 +197,24 @@ export class ImageManager {
     }
 
     updateFileInput() {
-        // Ahora esto es simple: fileInput refleja selectedFiles
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        if (fileInput) {
-            fileInput.files = this.selectedFiles.files;
-        }
+        const files = fileInput.files;
+        const dataTransfer = new DataTransfer();
+
+        const previewContainer = document.querySelector('.preview');
+        const existingPreviews = Array.from(previewContainer.querySelectorAll('.imagen-previa img'));
+
+        Array.from(files).forEach(file => {
+            const stillExists = existingPreviews.some(img =>
+                img.src.startsWith('data:') && img.src.includes(btoa(file.name).slice(0, 20))
+            );
+
+            if (stillExists) {
+                dataTransfer.items.add(file);
+            }
+        });
+
+        fileInput.files = dataTransfer.files;
     }
 
     showFileError(message) {
@@ -298,7 +245,7 @@ export class ImageManager {
     updateFileButtonText(fileCount) {
         const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
         if (fileBtn) {
-            fileBtn.innerHTML = `📁 ${this.selectedFiles.files.length} archivos seleccionados`;
+            fileBtn.innerHTML = `📁 ${fileCount} archivos seleccionados`;
             FormHelpers.addTemporaryStyle(
                 fileBtn,
                 {
@@ -315,12 +262,10 @@ export class ImageManager {
     }
 
     clearImages() {
-        // limpiar previews y DataTransfer
         this.clearPreviews();
         document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN).style.display = 'block';
 
-        this.selectedFiles = new DataTransfer();
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        if (fileInput) fileInput.value = '';
+        fileInput.value = '';
     }
 }
