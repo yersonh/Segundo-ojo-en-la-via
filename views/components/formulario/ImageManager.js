@@ -5,6 +5,7 @@ export class ImageManager {
     constructor(formManager) {
         this.formManager = formManager;
         this.selectedFiles = new DataTransfer();
+        this.currentPreviews = []; // Array para trackear previews existentes
     }
 
     initialize() {
@@ -12,81 +13,78 @@ export class ImageManager {
     }
 
     setupEventListeners() {
-    const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-    const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
+        const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
+        const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
 
-    console.log('🔍 ImageManager - Elementos:', { fileInput, fileBtn });
+        console.log('🔍 ImageManager - Elementos:', { fileInput, fileBtn });
 
-    if (fileInput && fileBtn) {
-        //CONECTAR BOTÓN AL INPUT FILE
-        fileBtn.addEventListener('click', () => {
-            console.log('🖱️ Botón clickeado - Abriendo selector de archivos...');
-            fileInput.click(); // Esto abre el selector nativo
-        });
+        if (fileInput && fileBtn) {
+            // CONECTAR BOTÓN AL INPUT FILE
+            fileBtn.addEventListener('click', () => {
+                console.log('🖱️ Botón clickeado - Abriendo selector de archivos...');
+                fileInput.click();
+            });
 
-        // Manejar selección de archivos
-        fileInput.addEventListener('change', (e) => {
-            console.log('📁 Archivos seleccionados:', e.target.files);
-            this.handleFileSelection(e);
-        });
+            // Manejar selección de archivos
+            fileInput.addEventListener('change', (e) => {
+                console.log('📁 Archivos seleccionados:', e.target.files);
+                this.handleFileSelection(e);
+            });
 
-    } else {
-        console.error('Elementos no encontrados:', {
-            fileInput: !!fileInput,
-            fileBtn: !!fileBtn
-        });
-    }
-}
-
-    handleFileSelection(e) {
-        const files = e.target.files;
-        const previewContainer = document.querySelector('.preview');
-        const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
-
-        this.clearPreviews();
-
-        if (files && files.length > 0) {
-            sinImagen.style.display = 'none';
-
-            if (files.length > FormConstants.MAX_IMAGES) {
-                this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas`);
-                e.target.value = '';
-                sinImagen.style.display = 'block';
-                return;
-            }
-
-            this.processFiles(files, previewContainer, sinImagen);
         } else {
-            sinImagen.style.display = 'block';
+            console.error('Elementos no encontrados:', {
+                fileInput: !!fileInput,
+                fileBtn: !!fileBtn
+            });
         }
     }
 
-    clearPreviews() {
+    handleFileSelection(e) {
+        const files = e.target.files;
+        const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
+
+        if (!files || files.length === 0) {
+            // Si no hay archivos seleccionados y no hay previews existentes, mostrar "sin imagen"
+            if (this.currentPreviews.length === 0) {
+                sinImagen.style.display = 'block';
+            }
+            return;
+        }
+
+        // Verificar límite total (existentes + nuevos)
+        const totalAfterAddition = this.currentPreviews.length + files.length;
+        if (totalAfterAddition > FormConstants.MAX_IMAGES) {
+            this.showFileError(`Máximo ${FormConstants.MAX_IMAGES} imágenes permitidas. Ya tienes ${this.currentPreviews.length} imágenes.`);
+            e.target.value = '';
+            return;
+        }
+
+        // Ocultar "sin imagen" si vamos a agregar archivos
+        sinImagen.style.display = 'none';
+
+        // Procesar los nuevos archivos
+        this.processFiles(files);
+
+        // Limpiar el input para permitir seleccionar los mismos archivos otra vez
+        e.target.value = '';
+    }
+
+    processFiles(files) {
+        let validFilesCount = 0;
         const previewContainer = document.querySelector('.preview');
-        previewContainer.querySelectorAll('.imagen-previa').forEach(img => img.remove());
 
-        const previewImg = document.querySelector(FormConstants.SELECTORS.PREVIEW_IMG);
-        previewImg.style.display = 'none';
-        previewImg.src = '';
+        for (const file of Array.from(files)) {
+            if (!this.validateFile(file)) continue;
+
+            validFilesCount++;
+            this.createImagePreview(file, previewContainer);
+        }
+
+        if (validFilesCount > 0) {
+            this.showFileSuccess(validFilesCount);
+            this.updateFileInput();
+        }
     }
-
-   processFiles(files, previewContainer, sinImagen) {
-    let validFilesCount = 0;
-
-    // Cambia forEach por for...of
-    for (const [index, file] of Array.from(files).entries()) {
-        if (!this.validateFile(file)) continue;
-
-        validFilesCount++;
-        this.createImagePreview(file, previewContainer, index);
-    }
-
-    if (validFilesCount > 0) {
-        this.showFileSuccess(validFilesCount);
-    } else {
-        sinImagen.style.display = 'block';
-    }
-}
 
     validateFile(file) {
         if (!FormHelpers.isValidImageFile(file)) {
@@ -99,10 +97,24 @@ export class ImageManager {
             return false;
         }
 
+        // Verificar si el archivo ya existe
+        if (this.isFileAlreadyAdded(file)) {
+            this.showFileError(`"${file.name}" ya fue agregado`);
+            return false;
+        }
+
         return true;
     }
 
-    createImagePreview(file, previewContainer, index) {
+    isFileAlreadyAdded(file) {
+        return this.currentPreviews.some(preview =>
+            preview.file.name === file.name &&
+            preview.file.size === file.size &&
+            preview.file.type === file.type
+        );
+    }
+
+    createImagePreview(file, previewContainer) {
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -136,6 +148,16 @@ export class ImageManager {
             previewContainer.insertBefore(imgContainer, document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN));
 
             FormHelpers.showElement(imgContainer);
+
+            // Guardar referencia del preview
+            this.currentPreviews.push({
+                container: imgContainer,
+                file: file,
+                element: img
+            });
+
+            // Agregar archivo a DataTransfer
+            this.selectedFiles.items.add(file);
         };
 
         reader.readAsDataURL(file);
@@ -187,34 +209,45 @@ export class ImageManager {
     }
 
     removeImagePreview(container) {
+        // Encontrar y remover del array currentPreviews
+        const index = this.currentPreviews.findIndex(preview => preview.container === container);
+        if (index !== -1) {
+            const removedFile = this.currentPreviews[index].file;
+            this.currentPreviews.splice(index, 1);
+
+            // Remover del DataTransfer
+            const newDataTransfer = new DataTransfer();
+            Array.from(this.selectedFiles.files).forEach(file => {
+                if (file !== removedFile) {
+                    newDataTransfer.items.add(file);
+                }
+            });
+            this.selectedFiles = newDataTransfer;
+        }
+
         container.remove();
         this.updateFileInput();
 
-        const previewContainer = document.querySelector('.preview');
-        if (previewContainer.querySelectorAll('.imagen-previa').length === 0) {
+        // Mostrar "sin imagen" si no hay previews
+        if (this.currentPreviews.length === 0) {
             document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN).style.display = 'block';
         }
+
+        this.updateFileButtonText();
     }
 
     updateFileInput() {
         const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        const files = fileInput.files;
+
+        // Crear un nuevo DataTransfer con todos los archivos actuales
         const dataTransfer = new DataTransfer();
-
-        const previewContainer = document.querySelector('.preview');
-        const existingPreviews = Array.from(previewContainer.querySelectorAll('.imagen-previa img'));
-
-        Array.from(files).forEach(file => {
-            const stillExists = existingPreviews.some(img =>
-                img.src.startsWith('data:') && img.src.includes(btoa(file.name).slice(0, 20))
-            );
-
-            if (stillExists) {
-                dataTransfer.items.add(file);
-            }
+        this.currentPreviews.forEach(preview => {
+            dataTransfer.items.add(preview.file);
         });
 
         fileInput.files = dataTransfer.files;
+
+        console.log('📁 Archivos actuales en input:', fileInput.files.length);
     }
 
     showFileError(message) {
@@ -236,36 +269,54 @@ export class ImageManager {
             `✅ ${fileCount}${FormConstants.MESSAGES.SUCCESS.IMAGES_LOADED}`;
 
         this.formManager.showAlert(message);
-
-        if (fileCount > 1) {
-            this.updateFileButtonText(fileCount);
-        }
+        this.updateFileButtonText();
     }
 
-    updateFileButtonText(fileCount) {
+    updateFileButtonText() {
         const fileBtn = document.querySelector(FormConstants.SELECTORS.BTN_SELECCIONAR_ARCHIVO);
         if (fileBtn) {
-            fileBtn.innerHTML = `📁 ${fileCount} archivos seleccionados`;
-            FormHelpers.addTemporaryStyle(
-                fileBtn,
-                {
-                    background: FormConstants.STYLES.SUCCESS_COLOR,
-                    color: 'white'
-                },
-                3000
-            );
+            const totalFiles = this.currentPreviews.length;
 
-            setTimeout(() => {
+            if (totalFiles > 0) {
+                fileBtn.innerHTML = `📁 ${totalFiles} archivo${totalFiles > 1 ? 's' : ''} seleccionado${totalFiles > 1 ? 's' : ''}`;
+                FormHelpers.addTemporaryStyle(
+                    fileBtn,
+                    {
+                        background: FormConstants.STYLES.SUCCESS_COLOR,
+                        color: 'white'
+                    },
+                    2000
+                );
+            } else {
                 fileBtn.innerHTML = '📁 Seleccionar Archivos';
-            }, 3000);
+            }
         }
     }
 
     clearImages() {
-        this.clearPreviews();
-        document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN).style.display = 'block';
+        // Limpiar previews visuales
+        const previewContainer = document.querySelector('.preview');
+        previewContainer.querySelectorAll('.imagen-previa').forEach(img => img.remove());
 
-        const fileInput = document.querySelector(FormConstants.SELECTORS.FOTO);
-        fileInput.value = '';
+        // Limpiar arrays y DataTransfer
+        this.currentPreviews = [];
+        this.selectedFiles = new DataTransfer();
+
+        // Actualizar input
+        this.updateFileInput();
+
+        // Mostrar "sin imagen"
+        document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN).style.display = 'block';
+        this.updateFileButtonText();
+    }
+
+    // Método para obtener los archivos actuales (útil para el formulario)
+    getCurrentFiles() {
+        return this.selectedFiles.files;
+    }
+
+    // Método para verificar si hay imágenes
+    hasImages() {
+        return this.currentPreviews.length > 0;
     }
 }
