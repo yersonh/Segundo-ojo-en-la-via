@@ -3178,3 +3178,13 @@ body, html {
 .profile-avatar-container {
     position: relative;
 }
+/* === AJUSTE SOLO PARA EL BOTÓN DE GEOLOCALIZACIÓN EN MÓVILES === */
+@media (max-width: 768px) {
+    .leaflet-control-geolocation,
+    .leaflet-control-locate,
+    .leaflet-bottom.leaflet-right .leaflet-control {
+        margin-bottom: 90px !important; /* sube un poco el botón en móviles */
+        margin-right: 10px !important;
+        transition: margin-bottom 0.3s ease;
+    }
+}
