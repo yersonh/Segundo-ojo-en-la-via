@@ -87,7 +87,7 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
                     </div>
 
                     <!-- Input de archivo oculto -->
-                    <input type="file" id="foto" name="imagen[]" accept="image/*" capture="environment" multiple style="display: none;">
+                    <input type="file" id="foto" name="imagen[]" accept="image/*" multiple style="display: none;">
 
                     <!-- Previsualización -->
                     <div class="preview">
