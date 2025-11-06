@@ -43,7 +43,6 @@ export class ImageManager {
         const previewContainer = document.querySelector('.preview');
         const sinImagen = document.querySelector(FormConstants.SELECTORS.SIN_IMAGEN);
 
-        this.clearPreviews();
 
         if (files && files.length > 0) {
             sinImagen.style.display = 'none';
