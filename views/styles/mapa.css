@@ -747,3 +747,20 @@ button:hover {
         font-size: 13px;
     }
 }
+/* === AJUSTE RESPONSIVO PARA EL BOTÓN DE GEOLOCALIZACIÓN EN MÓVILES === */
+@media (max-width: 768px) {
+    .leaflet-control-geolocation,
+    .leaflet-control-locate,
+    .leaflet-bottom.leaflet-right .leaflet-control {
+        margin-bottom: 90px !important; /* Sube el botón unos 90px */
+        margin-right: 10px !important;
+        transition: margin-bottom 0.3s ease;
+    }
+}
+
+/* Si más adelante tienes una barra inferior dinámica */
+body.barra-oculta .leaflet-control-geolocation,
+body.barra-oculta .leaflet-control-locate,
+body.barra-oculta .leaflet-bottom.leaflet-right .leaflet-control {
+    margin-bottom: 40px !important; /* Vuelve a bajarlo cuando la barra esté oculta */
+}
