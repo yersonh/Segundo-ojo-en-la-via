@@ -256,7 +256,7 @@ class AdminManager {
                 AdminManager.cambiarEstadoUsuario(idUsuario, nuevoEstado);
             }
 
-            if (e.target.id === 'filtroEstado') {
+            if (e.target.id === 'filtroEstadoReportes') {
                 this.filterReportesByEstado(e.target.value);
             }
         });
