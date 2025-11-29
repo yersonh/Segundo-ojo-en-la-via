@@ -1,27 +1,20 @@
-// notificaciones.js - VERSIÓN COMPLETA INTEGRADA CON SSE
 const NotificacionesManager = {
     inicializado: false,
     intervaloActualizacion: null,
     ultimaVerificacion: null,
     sseManager: null,
 
-    // 🚀 INICIALIZAR SISTEMA
     inicializar() {
         if (this.inicializado) {
             console.log('⚠️ NotificacionesManager ya estaba inicializado');
             return;
         }
 
-        console.log('🔔 Inicializando sistema de notificaciones con SSE...');
-
         this.configurarEventos();
         this.iniciarSSE();
         this.inicializado = true;
-
-        console.log('✅ NotificacionesManager inicializado con SSE');
     },
 
-    // ⚡ INICIAR SSE EN LUGAR DE POLLING
     iniciarSSE() {
         // Verificar si existe el SSE Manager global
         if (window.SSEManager && typeof window.SSEManager.inicializar === 'function') {
@@ -40,7 +33,6 @@ const NotificacionesManager = {
         }
     },
 
-    // 🎛️ CONFIGURAR MANEJADORES PERSONALIZADOS PARA SSE
     configurarManejadoresSSE() {
         // Sobrescribir el manejador de notificaciones de usuario
         const originalManejarNotificaciones = this.sseManager.manejarNuevasNotificacionesUsuario;
@@ -66,59 +58,43 @@ const NotificacionesManager = {
         };
     },
 
-    // 🎯 MANEJAR NOTIFICACIONES SSE
     manejarNotificacionSSE(data) {
         // Actualizar contador inmediatamente
         this.actualizarContadorNotificaciones();
-
-        // Si el dropdown está abierto, actualizar las notificaciones
-        const dropdown = document.getElementById('notificationsDropdown');
-        if (dropdown && dropdown.style.display === 'block') {
-            this.obtenerNuevasNotificaciones();
-        }
 
         // Mostrar notificación push
         if (!this.estaEnVistaNotificaciones()) {
             this.mostrarNotificacionPush('Tienes nuevas notificaciones');
         }
+
+        // Si YA estamos en la vista de notificaciones, actualizar
+        if (this.estaEnVistaNotificaciones()) {
+            this.cargarTodasNotificaciones();
+        }
     },
 
-    // 🛡️ POLLING DE FALLBACK (por si SSE falla)
     iniciarPollingFallback() {
-        console.log('🔄 Iniciando polling de fallback cada 30 segundos');
-
         // Cargar contador inicial
         this.actualizarContadorNotificaciones();
-
         // Actualizar cada 30 segundos
         this.intervaloActualizacion = setInterval(() => {
             this.actualizarContadorNotificaciones();
         }, 30000);
     },
 
-    // ⚙️ CONFIGURAR EVENT LISTENERS
     configurarEventos() {
-        // Evento para abrir/cerrar dropdown de notificaciones
+        // Evento para cargar notificaciones cuando se abre la vista
         const notificationIcon = document.querySelector('.nav-item[data-target="notificationsView"]');
         if (notificationIcon) {
             notificationIcon.addEventListener('click', (e) => {
-                if (!e.target.closest('.notification-badge')) {
-                    this.toggleDropdownNotificaciones();
-                }
+                // Cuando se hace clic en el icono, cargar las notificaciones después de un breve delay
+                setTimeout(() => {
+                    if (this.estaEnVistaNotificaciones()) {
+                        this.cargarTodasNotificaciones();
+                    }
+                }, 100);
             });
         }
-
-        // Cerrar dropdown al hacer clic fuera
-        document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('notificationsDropdown');
-            const icon = document.querySelector('.nav-item[data-target="notificationsView"]');
-
-            if (dropdown && dropdown.style.display === 'block' &&
-                !dropdown.contains(e.target) &&
-                !icon.contains(e.target)) {
-                this.cerrarDropdownNotificaciones();
-            }
-        });
 
         // Reconectar SSE cuando la página se vuelve visible
         document.addEventListener('visibilitychange', () => {
@@ -129,7 +105,6 @@ const NotificacionesManager = {
         });
     },
 
-    // 🔢 ACTUALIZAR CONTADOR DE NOTIFICACIONES (compatible con SSE)
     async actualizarContadorNotificaciones() {
         try {
             const resp = await fetch('../../controllers/notificacion_controlador.php?action=contar_no_leidas', {
@@ -168,7 +143,6 @@ const NotificacionesManager = {
         }
     },
 
-    // ✨ ANIMAR NUEVA NOTIFICACIÓN
     animarNuevaNotificacion() {
         const badge = document.getElementById('notificationBadge');
         if (!badge) return;
@@ -179,7 +153,6 @@ const NotificacionesManager = {
         }, 3000);
     },
 
-    // 📩 OBTENER NOTIFICACIONES NUEVAS (para dropdown)
     async obtenerNuevasNotificaciones() {
         try {
             const params = new URLSearchParams();
@@ -196,7 +169,6 @@ const NotificacionesManager = {
             const data = await resp.json();
 
             if (data.success && data.notificaciones.length > 0) {
-                this.mostrarNotificacionesEnDropdown(data.notificaciones);
                 this.ultimaVerificacion = Date.now();
             }
 
@@ -208,7 +180,6 @@ const NotificacionesManager = {
         }
     },
 
-    // 📋 CARGAR TODAS LAS NOTIFICACIONES (para vista completa)
     async cargarTodasNotificaciones() {
         try {
             const notificationsView = document.getElementById('notificationsView');
@@ -233,7 +204,7 @@ const NotificacionesManager = {
             this.actualizarContadorNotificaciones();
 
         } catch (error) {
-            console.error('❌ Error cargando notificaciones:', error);
+            console.error('Error cargando notificaciones:', error);
             const notificationsView = document.getElementById('notificationsView');
             if (notificationsView) {
                 notificationsView.innerHTML = `
@@ -246,66 +217,38 @@ const NotificacionesManager = {
         }
     },
 
-    // 🎪 TOGGLE DROPDOWN DE NOTIFICACIONES
-    toggleDropdownNotificaciones() {
-        const dropdown = document.getElementById('notificationsDropdown');
+    // ELIMINADO: toggleDropdownNotificaciones
+    // ELIMINADO: abrirDropdownNotificaciones
+    // ELIMINADO: cerrarDropdownNotificaciones
+    // ELIMINADO: crearDropdownNotificaciones
+    // ELIMINADO: mostrarNotificacionesEnDropdown
 
-        if (!dropdown) {
-            this.crearDropdownNotificaciones();
-            return this.toggleDropdownNotificaciones();
-        }
-
-        if (dropdown.style.display === 'block') {
-            this.cerrarDropdownNotificaciones();
-        } else {
-            this.abrirDropdownNotificaciones();
-        }
-    },
-
-    // 📤 ABRIR DROPDOWN
-    abrirDropdownNotificaciones() {
-        const dropdown = document.getElementById('notificationsDropdown');
-        if (!dropdown) return;
-
-        dropdown.style.display = 'block';
-        this.obtenerNuevasNotificaciones();
-    },
-
-    // 📥 CERRAR DROPDOWN
-    cerrarDropdownNotificaciones() {
-        const dropdown = document.getElementById('notificationsDropdown');
-        if (dropdown) {
-            dropdown.style.display = 'none';
-        }
-    },
-
-    // 🔔 MOSTRAR NOTIFICACIÓN PUSH (mejorada)
     mostrarNotificacionPush(mensaje, tipo = 'info') {
         // Solo mostrar si la página está visible y no está en vista de notificaciones
         if (document.hidden || this.estaEnVistaNotificaciones()) return;
 
+        // Usar tus estilos existentes de profile-notification
         const toast = document.createElement('div');
-        toast.className = `notification-toast toast-${tipo}`;
+        toast.className = `profile-notification profile-notification-${tipo}`;
         toast.innerHTML = `
-            <div class="toast-icon">
+            <div class="notification-content">
                 <i class="fas fa-bell"></i>
+                <span>${this.escapeHtml(mensaje)}</span>
             </div>
-            <div class="toast-content">
-                <div class="toast-message">${this.escapeHtml(mensaje)}</div>
-            </div>
-            <button class="toast-close" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
         `;
 
         document.body.appendChild(toast);
 
-        // Animación de entrada
-        setTimeout(() => toast.classList.add('show'), 100);
+        // Animación de entrada usando tus estilos existentes
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        }, 100);
 
         // Auto-remover después de 5 segundos
         setTimeout(() => {
-            toast.classList.remove('show');
+            toast.style.transform = 'translateX(400px)';
+            toast.style.opacity = '0';
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.parentNode.removeChild(toast);
@@ -313,13 +256,11 @@ const NotificacionesManager = {
             }, 300);
         }, 5000);
 
-        // Reproducir sonido si no está en modo silencioso
         if (!this.estaEnModoSilencioso()) {
             this.reproducirSonidoNotificacion();
         }
     },
 
-    // 🔇 REPRODUCIR SONIDO DE NOTIFICACIÓN
     reproducirSonidoNotificacion() {
         try {
             // Crear un sonido simple usando Web Audio API
@@ -343,70 +284,15 @@ const NotificacionesManager = {
         }
     },
 
-    // 🏠 VERIFICAR SI ESTÁ EN VISTA DE NOTIFICACIONES
     estaEnVistaNotificaciones() {
         const notificationsView = document.getElementById('notificationsView');
         return notificationsView && notificationsView.style.display !== 'none';
     },
 
-    // 🔕 VERIFICAR MODO SILENCIOSO
     estaEnModoSilencioso() {
         return localStorage.getItem('modo_silencioso') === 'true';
     },
 
-    // 📦 MOSTRAR NOTIFICACIONES EN DROPDOWN
-    mostrarNotificacionesEnDropdown(notificaciones) {
-        const dropdown = document.getElementById('notificationsDropdown');
-        if (!dropdown) return;
-
-        const content = dropdown.querySelector('.notifications-dropdown-content');
-        if (!content) return;
-
-        if (notificaciones.length === 0) {
-            content.innerHTML = `
-                <div class="no-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>No hay notificaciones nuevas</p>
-                </div>
-            `;
-            return;
-        }
-
-        content.innerHTML = notificaciones.map(notif => `
-            <div class="notification-item ${notif.leida ? 'leida' : 'no-leida'}"
-                 data-id="${notif.id_notificacion}">
-                <div class="notification-icon">
-                    ${this.obtenerIconoTipo(notif.tipo)}
-                </div>
-                <div class="notification-content">
-                    <div class="notification-message">${this.escapeHtml(notif.mensaje)}</div>
-                    <div class="notification-meta">
-                        <span class="notification-time">${this.formatearTiempoRelativo(notif.fecha)}</span>
-                        ${notif.origen_nombres ? `<span class="notification-from">• ${this.escapeHtml(notif.origen_nombres)}</span>` : ''}
-                    </div>
-                </div>
-                <div class="notification-actions">
-                    ${!notif.leida ? `
-                        <button class="btn-mark-read" onclick="NotificacionesManager.marcarComoLeida(${notif.id_notificacion}, this)">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
-
-        // Agregar botón para ver todas
-        const verTodasBtn = document.createElement('div');
-        verTodasBtn.className = 'notifications-footer';
-        verTodasBtn.innerHTML = `
-            <button class="btn-view-all" onclick="NotificacionesManager.verTodasNotificaciones()">
-                <i class="fas fa-list"></i> Ver todas las notificaciones
-            </button>
-        `;
-        content.appendChild(verTodasBtn);
-    },
-
-    // 📄 MOSTRAR NOTIFICACIONES EN VISTA COMPLETA
     mostrarNotificacionesEnVista(notificaciones, container) {
         if (!container) return;
 
@@ -471,7 +357,6 @@ const NotificacionesManager = {
         `;
     },
 
-    // ✅ MARCAR COMO LEÍDA
     async marcarComoLeida(id_notificacion, elementoBtn = null) {
         try {
             const formData = new FormData();
@@ -488,14 +373,12 @@ const NotificacionesManager = {
             if (data.success) {
                 // Actualizar UI
                 if (elementoBtn) {
-                    const notificationItem = elementoBtn.closest('.notification-item, .notification-card');
+                    const notificationItem = elementoBtn.closest('.notification-card');
                     if (notificationItem) {
                         notificationItem.classList.remove('no-leida');
                         notificationItem.classList.add('leida');
 
-                        if (elementoBtn.classList.contains('btn-mark-read')) {
-                            elementoBtn.remove();
-                        } else if (elementoBtn.classList.contains('btn-small')) {
+                        if (elementoBtn.classList.contains('btn-small')) {
                             elementoBtn.outerHTML = '<span class="badge-leida">Leída</span>';
                         }
                     }
@@ -513,7 +396,6 @@ const NotificacionesManager = {
         }
     },
 
-    // ✅ MARCAR TODAS COMO LEÍDAS
     async marcarTodasComoLeidas() {
         try {
             const resp = await fetch('../../controllers/notificacion_controlador.php?action=marcar_todas_leidas', {
@@ -525,17 +407,13 @@ const NotificacionesManager = {
 
             if (data.success) {
                 // Actualizar todas las notificaciones en la UI
-                document.querySelectorAll('.notification-item, .notification-card').forEach(item => {
+                document.querySelectorAll('.notification-card').forEach(item => {
                     item.classList.remove('no-leida');
                     item.classList.add('leida');
 
-                    const btn = item.querySelector('.btn-mark-read, .btn-small');
+                    const btn = item.querySelector('.btn-small');
                     if (btn) {
-                        if (btn.classList.contains('btn-mark-read')) {
-                            btn.remove();
-                        } else {
-                            btn.outerHTML = '<span class="badge-leida">Leída</span>';
-                        }
+                        btn.outerHTML = '<span class="badge-leida">Leída</span>';
                     }
                 });
 
@@ -551,7 +429,6 @@ const NotificacionesManager = {
         }
     },
 
-    // 👁️ VER NOTIFICACIÓN (navegar al reporte)
     verNotificacion(id_notificacion, id_reporte) {
         // Primero marcar como leída si no lo está
         this.marcarComoLeida(id_notificacion);
@@ -563,55 +440,16 @@ const NotificacionesManager = {
             console.warn('Sistema de comentarios no disponible');
             alert('Función de comentarios no disponible');
         }
-
-        // Cerrar dropdown si está abierto
-        this.cerrarDropdownNotificaciones();
     },
 
-    // 📋 VER TODAS LAS NOTIFICACIONES (navegar a vista completa)
     verTodasNotificaciones() {
         // Navegar a la vista de notificaciones
         const navItem = document.querySelector('.nav-item[data-target="notificationsView"]');
         if (navItem) {
             navItem.click();
         }
-
-        // Cerrar dropdown
-        this.cerrarDropdownNotificaciones();
     },
 
-    // 🏗️ CREAR DROPDOWN DE NOTIFICACIONES
-    crearDropdownNotificaciones() {
-        const existingDropdown = document.getElementById('notificationsDropdown');
-        if (existingDropdown) {
-            existingDropdown.remove();
-        }
-
-        const dropdown = document.createElement('div');
-        dropdown.id = 'notificationsDropdown';
-        dropdown.className = 'notifications-dropdown';
-        dropdown.style.display = 'none';
-
-        dropdown.innerHTML = `
-            <div class="notifications-dropdown-header">
-                <h4>Notificaciones</h4>
-                <button class="btn-close-dropdown" onclick="NotificacionesManager.cerrarDropdownNotificaciones()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="notifications-dropdown-content">
-                <div class="loading-notifications">
-                    <div class="loading-spinner-small"></div>
-                    <p>Cargando notificaciones...</p>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(dropdown);
-        return dropdown;
-    },
-
-    // 🎯 OBTENER ICONO SEGÚN TIPO
     obtenerIconoTipo(tipo) {
         const iconos = {
             'like': '👍',
@@ -623,7 +461,6 @@ const NotificacionesManager = {
         return iconos[tipo] || '🔔';
     },
 
-    // 📝 OBTENER TEXTO SEGÚN TIPO
     obtenerTextoTipo(tipo) {
         const textos = {
             'like': 'Like',
@@ -635,7 +472,6 @@ const NotificacionesManager = {
         return textos[tipo] || 'Notificación';
     },
 
-    // ⏰ FORMATEAR TIEMPO RELATIVO
     formatearTiempoRelativo(fechaString) {
         const fecha = new Date(fechaString);
         const ahora = new Date();
@@ -653,7 +489,6 @@ const NotificacionesManager = {
         return fecha.toLocaleDateString('es-ES');
     },
 
-    // 📅 FORMATEAR FECHA COMPLETA
     formatearFechaCompleta(fechaString) {
         const fecha = new Date(fechaString);
         return fecha.toLocaleDateString('es-ES', {
@@ -665,13 +500,10 @@ const NotificacionesManager = {
         });
     },
 
-    // ✅ MOSTRAR MENSAJE DE ÉXITO
     mostrarMensajeExito(mensaje) {
-        // Puedes implementar un sistema de toasts más sofisticado aquí
         console.log('✅ ' + mensaje);
     },
 
-    // 🔒 ESCAPAR HTML
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -679,7 +511,6 @@ const NotificacionesManager = {
         return div.innerHTML;
     },
 
-    // 🧹 DESTRUIR INSTANCIA
     destruir() {
         if (this.intervaloActualizacion) {
             clearInterval(this.intervaloActualizacion);
@@ -694,7 +525,6 @@ const NotificacionesManager = {
     }
 };
 
-// 🎯 INICIALIZACIÓN MEJORADA
 document.addEventListener('DOMContentLoaded', function() {
     // Esperar un poco para asegurar que SSE Manager esté disponible
     setTimeout(() => {
@@ -702,7 +532,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// 🎯 INTEGRACIÓN CON NAVEGACIÓN EXISTENTE
 document.addEventListener('DOMContentLoaded', function() {
     // Sobrescribir la función de carga de notificaciones en panel.js
     if (typeof window.cargarNotificacionesSuave === 'function') {
@@ -713,5 +542,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// 🎯 EXPORTAR PARA USO GLOBAL
 window.NotificacionesManager = NotificacionesManager;
