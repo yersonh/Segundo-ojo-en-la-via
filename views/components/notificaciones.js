@@ -6,7 +6,7 @@ const NotificacionesManager = {
 
     inicializar() {
         if (this.inicializado) {
-            console.log('⚠️ NotificacionesManager ya estaba inicializado');
+            console.log('NotificacionesManager ya estaba inicializado');
             return;
         }
 
@@ -26,9 +26,8 @@ const NotificacionesManager = {
             // Inicializar SSE
             this.sseManager.inicializar();
 
-            console.log('⚡ SSE integrado con NotificacionesManager');
         } else {
-            console.warn('⚠️ SSE Manager no disponible, usando polling como fallback');
+            console.warn(' SSE Manager no disponible, usando polling como fallback');
             this.iniciarPollingFallback();
         }
     },
@@ -38,7 +37,7 @@ const NotificacionesManager = {
         const originalManejarNotificaciones = this.sseManager.manejarNuevasNotificacionesUsuario;
 
         this.sseManager.manejarNuevasNotificacionesUsuario = (data) => {
-            console.log('🔔 Notificación SSE recibida en NotificacionesManager:', data);
+            console.log('Notificación SSE recibida en NotificacionesManager:', data);
 
             // Ejecutar el manejador original si existe
             if (originalManejarNotificaciones) {
@@ -99,7 +98,7 @@ const NotificacionesManager = {
         // Reconectar SSE cuando la página se vuelve visible
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && this.sseManager && !this.sseManager.isConnected) {
-                console.log('🔄 Página visible - reconectando SSE');
+                console.log('Página visible - reconectando SSE');
                 this.sseManager.reconectar();
             }
         });
@@ -122,13 +121,12 @@ const NotificacionesManager = {
             return data.total_no_leidas || 0;
 
         } catch (error) {
-            console.error('❌ Error actualizando contador:', error);
+            console.error('Error actualizando contador:', error);
             this.actualizarBadgeUI(0);
             return 0;
         }
     },
 
-    // 🎨 ACTUALIZAR BADGE EN UI
     actualizarBadgeUI(totalNoLeidas) {
         const badge = document.getElementById('notificationBadge');
 
@@ -175,7 +173,7 @@ const NotificacionesManager = {
             return data.notificaciones || [];
 
         } catch (error) {
-            console.error('❌ Error obteniendo nuevas notificaciones:', error);
+            console.error('Error obteniendo nuevas notificaciones:', error);
             return [];
         }
     },
@@ -217,17 +215,10 @@ const NotificacionesManager = {
         }
     },
 
-    // ELIMINADO: toggleDropdownNotificaciones
-    // ELIMINADO: abrirDropdownNotificaciones
-    // ELIMINADO: cerrarDropdownNotificaciones
-    // ELIMINADO: crearDropdownNotificaciones
-    // ELIMINADO: mostrarNotificacionesEnDropdown
-
     mostrarNotificacionPush(mensaje, tipo = 'info') {
-        // Solo mostrar si la página está visible y no está en vista de notificaciones
+
         if (document.hidden || this.estaEnVistaNotificaciones()) return;
 
-        // Usar tus estilos existentes de profile-notification
         const toast = document.createElement('div');
         toast.className = `profile-notification profile-notification-${tipo}`;
         toast.innerHTML = `
@@ -238,14 +229,11 @@ const NotificacionesManager = {
         `;
 
         document.body.appendChild(toast);
-
-        // Animación de entrada usando tus estilos existentes
         setTimeout(() => {
             toast.style.transform = 'translateX(0)';
             toast.style.opacity = '1';
         }, 100);
 
-        // Auto-remover después de 5 segundos
         setTimeout(() => {
             toast.style.transform = 'translateX(400px)';
             toast.style.opacity = '0';
@@ -280,7 +268,7 @@ const NotificacionesManager = {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (error) {
-            console.log('🔇 No se pudo reproducir sonido de notificación');
+            console.log('No se pudo reproducir sonido de notificación');
         }
     },
 
@@ -371,7 +359,6 @@ const NotificacionesManager = {
             const data = await resp.json();
 
             if (data.success) {
-                // Actualizar UI
                 if (elementoBtn) {
                     const notificationItem = elementoBtn.closest('.notification-card');
                     if (notificationItem) {
@@ -391,7 +378,7 @@ const NotificacionesManager = {
                 throw new Error(data.error || 'Error al marcar como leída');
             }
         } catch (error) {
-            console.error('❌ Error marcando notificación como leída:', error);
+            console.error('Error marcando notificación como leída:', error);
             alert('Error al marcar como leída: ' + error.message);
         }
     },
@@ -406,7 +393,6 @@ const NotificacionesManager = {
             const data = await resp.json();
 
             if (data.success) {
-                // Actualizar todas las notificaciones en la UI
                 document.querySelectorAll('.notification-card').forEach(item => {
                     item.classList.remove('no-leida');
                     item.classList.add('leida');
@@ -424,13 +410,13 @@ const NotificacionesManager = {
                 throw new Error(data.error || 'Error al marcar todas como leídas');
             }
         } catch (error) {
-            console.error('❌ Error marcando todas como leídas:', error);
+            console.error('Error marcando todas como leídas:', error);
             alert('Error al marcar todas como leídas: ' + error.message);
         }
     },
 
     verNotificacion(id_notificacion, id_reporte) {
-        // Primero marcar como leída si no lo está
+        // marcar como leída si no lo está
         this.marcarComoLeida(id_notificacion);
 
         // Navegar al reporte usando el sistema de comentarios
@@ -501,7 +487,7 @@ const NotificacionesManager = {
     },
 
     mostrarMensajeExito(mensaje) {
-        console.log('✅ ' + mensaje);
+        console.log('' + mensaje);
     },
 
     escapeHtml(text) {
@@ -521,7 +507,7 @@ const NotificacionesManager = {
         }
 
         this.inicializado = false;
-        console.log('🔔 NotificacionesManager destruido');
+        console.log('NotificacionesManager destruido');
     }
 };
 

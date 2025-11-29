@@ -103,10 +103,10 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
                     <!-- Controles de cámara -->
                     <div id="controlesCamara" class="controles-camara" style="display: none;">
                         <button type="button" id="btnCapturar" class="btn-capturar">
-                            ✅ Capturar Foto
+                            Capturar Foto
                         </button>
                         <button type="button" id="btnCancelarCamara" class="btn-cancelar">
-                            ❌ Cancelar
+                            Cancelar
                         </button>
                     </div>
 
@@ -132,7 +132,7 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
                 <button type="submit" id="submitBtn">Registrar Reporte</button>
             </form>
 
-            <!-- 📝 Sección de Comentarios -->
+            <!-- Sección de Comentarios -->
             <div id="comentariosSection" class="comentarios-section" style="display: none;">
                 <h3>💬 Comentarios del Reporte</h3>
 
@@ -178,25 +178,25 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
 
     document.addEventListener('DOMContentLoaded', async function() {
         try {
-            console.log('🚀 Inicializando aplicación con soporte offline...');
+            console.log('Inicializando aplicación con soporte offline...');
 
             // 1. Inicializar sistema de mapas
             await mapaSistema.inicializar();
-            console.log('✅ Sistema de mapas inicializado');
+            console.log('Sistema de mapas inicializado');
 
             // 2. Inicializar sistema de formularios
             await formularioSistema.initialize();
-            console.log('✅ Sistema de formularios inicializado');
+            console.log('Sistema de formularios inicializado');
 
             // 3. Inicializar otros módulos
             if (typeof ComentariosManager !== 'undefined') {
                 ComentariosManager.inicializar();
-                console.log('✅ ComentariosManager inicializado');
+                console.log('ComentariosManager inicializado');
             }
 
             if (typeof BuscadorManager !== 'undefined') {
                 BuscadorManager.inicializar(mapaSistema.getMap());
-                console.log('✅ BuscadorManager inicializado');
+                console.log('BuscadorManager inicializado');
             }
 
             // 4. Integrar Connection Manager
@@ -206,10 +206,10 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
                 });
             }
 
-            console.log('🎉 Aplicación completamente inicializada con soporte offline');
+            console.log(' Aplicación completamente inicializada con soporte offline');
 
         } catch (error) {
-            console.error('❌ Error al inicializar la aplicación:', error);
+            console.error('Error al inicializar la aplicación:', error);
 
             const alertError = document.getElementById('alertError');
             if (alertError) {
@@ -221,22 +221,20 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
 
 </script>
 
-<!-- 🔧 SOLUCIÓN MÍNIMA PARA IMÁGENES HTTPS SOLO EN PRODUCCIÓN -->
 <script>
-// SOLO corregir imágenes en producción (Railway)
 function esProduccion() {
     return window.location.hostname.includes('railway.app') ||
-           window.location.hostname.includes('ojo-en-la-via');
+        window.location.hostname.includes('ojo-en-la-via');
 }
 
 function corregirImagenesSoloProduccion() {
     // Solo ejecutar en producción
     if (!esProduccion()) {
-        console.log('🔧 Modo desarrollo: imágenes sin cambios');
+        console.log(' Modo desarrollo: imágenes sin cambios');
         return;
     }
 
-    console.log('🔧 Corrigiendo imágenes a HTTPS en producción...');
+    console.log('Corrigiendo imágenes a HTTPS en producción...');
 
     // Corregir imágenes existentes
     document.querySelectorAll('img').forEach(img => {
@@ -247,7 +245,6 @@ function corregirImagenesSoloProduccion() {
         }
     });
 
-    // Observar cambios futuros solo en producción
     if (esProduccion()) {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -294,14 +291,13 @@ if (window.mapaSistema && esProduccion()) {
 }
 </script>
 
-<!-- 🚀 SISTEMA DE ACTUALIZACIÓN DEL SERVICE WORKER -->
 <script>
 class SWManager {
     static async init() {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.ready;
-                console.log('🔍 Monitoreando actualizaciones del SW...');
+                console.log('Monitoreando actualizaciones del SW...');
 
                 // Verificar actualizaciones periódicamente
                 setInterval(() => {
@@ -310,7 +306,7 @@ class SWManager {
 
                 // Detectar cuando hay nueva versión
                 registration.addEventListener('updatefound', () => {
-                    console.log('🔄 Nueva versión del Service Worker disponible');
+                    console.log('Nueva versión del Service Worker disponible');
                     const newWorker = registration.installing;
 
                     newWorker.addEventListener('statechange', () => {
@@ -321,7 +317,7 @@ class SWManager {
                 });
 
             } catch (error) {
-                console.log('⚠️ No se pudo monitorear actualizaciones:', error);
+                console.log('No se pudo monitorear actualizaciones:', error);
             }
         }
     }
@@ -379,18 +375,17 @@ class SWManager {
     }
 }
 
-// 🛠️ COMANDOS DEBUG - Para forzar actualización cuando hay problemas
 window.forceSWUpdate = async function() {
     if ('serviceWorker' in navigator) {
-        console.log('🔄 Forzando actualización del Service Worker...');
+        console.log('Forzando actualización del Service Worker...');
         const registrations = await navigator.serviceWorker.getRegistrations();
 
         for (let registration of registrations) {
             await registration.unregister();
-            console.log('🗑️ SW eliminado:', registration.scope);
+            console.log('SW eliminado:', registration.scope);
         }
 
-        console.log('✅ Todos los SW eliminados. Recargando...');
+        console.log('Todos los SW eliminados. Recargando...');
         // Limpiar caches también
         if (window.caches) {
             const cacheNames = await window.caches.keys();
@@ -401,13 +396,13 @@ window.forceSWUpdate = async function() {
             location.reload(true); // Forzar recarga sin cache
         }, 1000);
     } else {
-        console.log('❌ Service Worker no soportado');
+        console.log('Service Worker no soportado');
     }
 };
 
 // Comando alternativo para recarga forzada
 window.hardReload = function() {
-    console.log('🔄 Recarga forzada sin cache...');
+    console.log('Recarga forzada sin cache...');
     location.reload(true);
 };
 
@@ -417,9 +412,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- ============================================= -->
-<!-- RECEPTOR DE MENSAJES DESDE PANELINICIO - VERSIÓN MEJORADA -->
-<!-- ============================================= -->
 <script>
 // Agregar estilos dinámicamente para los marcadores temporales
 const style = document.createElement('style');
@@ -611,7 +603,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// En vermapa.php, agregar este código para recibir mensajes desde panelInicio
 window.addEventListener('message', function(event) {
     // Verificar que el mensaje viene de nuestro dominio (opcional, por seguridad)
     // if (event.origin !== '<?php echo $baseUrl; ?>') return;
@@ -626,10 +617,10 @@ window.addEventListener('message', function(event) {
 
 // Función para mostrar el reporte en el mapa cuando viene del panel
 function mostrarReporteEnMapaDesdePanel(message) {
-    console.log('📍 Activando reporte en mapa:', message);
+    console.log('Activando reporte en mapa:', message);
 
     if (!message.coordinates || !message.coordinates.lat || !message.coordinates.lng) {
-        console.error('❌ Coordenadas inválidas');
+        console.error('Coordenadas inválidas');
         return;
     }
 
@@ -638,7 +629,7 @@ function mostrarReporteEnMapaDesdePanel(message) {
     const reportId = message.reportId;
     const reportData = message.reportData;
 
-    console.log(`🎯 Objetivo: Reporte ${reportId} en [${lat}, ${lng}]`);
+    console.log(`Objetivo: Reporte ${reportId} en [${lat}, ${lng}]`);
 
     // Obtener el mapa
     let map = null;
@@ -649,7 +640,7 @@ function mostrarReporteEnMapaDesdePanel(message) {
     }
 
     if (!map) {
-        console.error('❌ No hay mapa disponible');
+        console.error('No hay mapa disponible');
         return;
     }
 
@@ -659,7 +650,7 @@ function mostrarReporteEnMapaDesdePanel(message) {
 
 // FUNCIÓN MEJORADA PARA RESALTAR MARCADORES CON SOPORTE PARA CLUSTERS
 function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
-    console.log('🎯 BUSCANDO REPORTE EN SISTEMA:', reportId);
+    console.log('BUSCANDO REPORTE EN SISTEMA:', reportId);
 
     let map = null;
     if (typeof window.mapaSistema !== 'undefined' && window.mapaSistema.getMap) {
@@ -669,13 +660,13 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
     }
 
     if (!map) {
-        console.error('❌ No se pudo obtener el mapa');
+        console.error(' No se pudo obtener el mapa');
         return;
     }
 
     // PRIMERO: Centrar el mapa en la ubicación
     map.setView([lat, lng], 16);
-    console.log('📍 Mapa centrado en:', lat, lng);
+    console.log('Mapa centrado en:', lat, lng);
 
     // BUSCAR EL MARCADOR ESPECÍFICO
     let marcadorEncontrado = null;
@@ -689,7 +680,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
         if (markerManager.markers && Array.isArray(markerManager.markers)) {
             for (let item of markerManager.markers) {
                 if (item.data && item.data.id_reporte == reportId) {
-                    console.log('✅ Marcador encontrado en MarkerManager:', item);
+                    console.log('Marcador encontrado en MarkerManager:', item);
                     marcadorEncontrado = item.marker;
                     break;
                 }
@@ -701,7 +692,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
             const layers = markerManager.markerCluster.getLayers();
             for (let layer of layers) {
                 if (layer.options && layer.options.reportId == reportId) {
-                    console.log('✅ Marcador encontrado en markerCluster:', layer);
+                    console.log('Marcador encontrado en markerCluster:', layer);
                     marcadorEncontrado = layer;
                     clusterContenedor = markerManager.markerCluster;
                     break;
@@ -712,7 +703,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
 
     // ESTRATEGIA 2: Buscar en todas las capas del mapa
     if (!marcadorEncontrado) {
-        console.log('🔍 Buscando en todas las capas del mapa...');
+        console.log('Buscando en todas las capas del mapa...');
         const targetLatLng = L.latLng(lat, lng);
 
         map.eachLayer((layer) => {
@@ -721,7 +712,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
             if (layer instanceof L.Marker) {
                 // Buscar por reportId
                 if (layer.options && layer.options.reportId == reportId) {
-                    console.log('✅ Marcador encontrado por reportId:', layer);
+                    console.log('Marcador encontrado por reportId:', layer);
                     marcadorEncontrado = layer;
                     return;
                 }
@@ -731,7 +722,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
                 if (layerLatLng) {
                     const distance = targetLatLng.distanceTo(layerLatLng);
                     if (distance < 2) { // Solo 2 metros de tolerancia
-                        console.log('✅ Marcador encontrado por coordenadas exactas:', layer);
+                        console.log(' Marcador encontrado por coordenadas exactas:', layer);
                         marcadorEncontrado = layer;
                         return;
                     }
@@ -740,12 +731,12 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
 
             // Buscar en clusters
             if (layer instanceof L.MarkerClusterGroup) {
-                console.log('🔍 Examinando cluster group...');
+                console.log(' Examinando cluster group...');
                 const layersEnCluster = layer.getLayers();
 
                 for (let clusterLayer of layersEnCluster) {
                     if (clusterLayer.options && clusterLayer.options.reportId == reportId) {
-                        console.log('✅ Marcador encontrado en cluster group:', clusterLayer);
+                        console.log('Marcador encontrado en cluster group:', clusterLayer);
                         marcadorEncontrado = clusterLayer;
                         clusterContenedor = layer;
                         return;
@@ -761,7 +752,7 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
             // Si está en un cluster, expandirlo primero
             console.log('📂 Expandiendo cluster...');
             clusterContenedor.zoomToShowLayer(marcadorEncontrado, function() {
-                console.log('✅ Cluster expandido, activando marcador...');
+                console.log('Cluster expandido, activando marcador...');
                 setTimeout(() => {
                     activarMarcadorConEfectos(marcadorEncontrado, map, reportData);
                 }, 800); // Dar tiempo a que se expanda el cluster
@@ -773,25 +764,25 @@ function resaltarMarcadorReporte(reportId, lat, lng, reportData) {
             }, 300);
         }
     } else {
-        console.log('❌ Marcador no encontrado en el sistema');
+        console.log('Marcador no encontrado en el sistema');
         crearMarcadorTemporalMejorado(lat, lng, reportData, map);
     }
 }
 
 // FUNCIÓN MEJORADA PARA ACTIVAR MARCADORES
 function activarMarcadorConEfectos(marker, map, reportData) {
-    console.log('🎯 ACTIVANDO MARCADOR CON EFECTOS:', marker);
+    console.log('ACTIVANDO MARCADOR CON EFECTOS:', marker);
 
     // 1. Obtener coordenadas exactas
     const markerLatLng = marker.getLatLng();
     if (!markerLatLng) {
-        console.error('❌ No se pudieron obtener coordenadas del marcador');
+        console.error('No se pudieron obtener coordenadas del marcador');
         return;
     }
 
     // 2. Centrar el mapa con zoom adecuado
     map.setView(markerLatLng, 18); // Zoom más cercano
-    console.log('📍 Mapa centrado en marcador con zoom 18');
+    console.log('Mapa centrado en marcador con zoom 18');
 
     // 3. Resaltar visualmente el marcador
     if (marker.setZIndexOffset) {
@@ -938,7 +929,7 @@ function buscarMarcadorEnMapa(map, reportId, lat, lng, reportData) {
                     layer.openPopup();
                 }
 
-                console.log('✅ Marcador resaltado:', reportId);
+                console.log('Marcador resaltado:', reportId);
                 marcadorEncontrado = true;
             }
         }
@@ -1006,12 +997,12 @@ window.debugMarcadores = function() {
     let map = null;
     if (typeof window.mapaSistema !== 'undefined' && window.mapaSistema.getMap) {
         map = window.mapaSistema.getMap();
-        console.log('✅ Mapa obtenido de mapaSistema');
+        console.log('Mapa obtenido de mapaSistema');
     } else if (typeof L !== 'undefined' && window.map) {
         map = window.map;
         console.log('✅ Mapa obtenido de window.map');
     } else {
-        console.error('❌ No hay mapa disponible');
+        console.error('No hay mapa disponible');
         return;
     }
 
@@ -1110,7 +1101,7 @@ window.debugSistemaMapa = function() {
     let map = window.mapaSistema?.getMap() || window.map;
     if (map) {
         console.log('🗺️ Mapa:', map);
-        debugMarcadores(); // Ejecutar el debug original también
+        debugMarcadores();
     }
 };
 </script>

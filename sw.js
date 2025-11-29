@@ -1,11 +1,6 @@
-// sw.js - SERVICE WORKER PROFESIONAL Y SEGURO
-// Versión: 3.0 - Estrategia: Network-First para todo
-
 const CACHE_NAME = 'ojo-en-la-via-v3-' + new Date().toISOString().split('T')[0];
 const API_ENDPOINTS = ['/controllers/', '/api/', 'reportecontrolador', 'usuario_controlador'];
 
-// 🎯 ESTRATEGIA PRINCIPAL: Network-First para TODO
-// Esto evita problemas de cache de código y asegura siempre la versión más reciente
 
 self.addEventListener('install', (event) => {
     console.log('🔧 SW Profesional instalado - Versión 3.0');
@@ -22,17 +17,17 @@ self.addEventListener('install', (event) => {
                     '/styles/formulario.css'
                 ].filter(url => url); // Filtrar URLs válidas
 
-                console.log('💾 Precargando assets críticos:', criticalAssets);
+                console.log('Precargando assets críticos:', criticalAssets);
                 return cache.addAll(criticalAssets)
                     .catch(error => {
-                        console.log('⚠️ Algunos assets críticos fallaron:', error);
+                        console.log('Algunos assets críticos fallaron:', error);
                     });
             })
     );
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 SW Profesional activado - Limpiando caches antiguos');
+    console.log('SW Profesional activado - Limpiando caches antiguos');
 
     event.waitUntil(
         Promise.all([
@@ -43,14 +38,14 @@ self.addEventListener('activate', (event) => {
                 return Promise.all(
                     cacheNames.map(cacheName => {
                         if (cacheName !== CACHE_NAME) {
-                            console.log('🗑️ Eliminando cache antiguo:', cacheName);
+                            console.log('Eliminando cache antiguo:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
                 );
             })
         ]).then(() => {
-            console.log('✅ SW completamente activado y limpio');
+            console.log('SW completamente activado y limpio');
         })
     );
 });
@@ -58,8 +53,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
-
-    // 🔒 FILTROS DE SEGURIDAD - Ignorar requests problemáticos
 
     // 1. Ignorar métodos que no sean GET
     if (request.method !== 'GET') {
@@ -78,22 +71,22 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. 🚨 IGNORAR COMPLETAMENTE ARCHIVOS JS - EVITAR CACHE DE CÓDIGO
+    // 4. IGNORAR COMPLETAMENTE ARCHIVOS JS - EVITAR CACHE DE CÓDIGO
     if (request.url.match(/\.js(\?.*)?$/) ||
         request.destination === 'script') {
         return; // Network only - siempre la versión más reciente
     }
 
-    // 5. 🚨 IGNORAR APIS Y ENDPOINTS DINÁMICOS
+    // 5. IGNORAR APIS Y ENDPOINTS DINÁMICOS
     if (isApiRequest(request)) {
         return; // Network only - datos siempre frescos
     }
 
-    // 🎯 ESTRATEGIA: NETWORK-FIRST PARA TODO LO DEMÁS
+    // ESTRATEGIA: NETWORK-FIRST PARA TODO LO DEMÁS
     event.respondWith(handleNetworkFirst(request));
 });
 
-// 🛠️ FUNCIÓN PARA IDENTIFICAR REQUEST DE API
+// FUNCIÓN PARA IDENTIFICAR REQUEST DE API
 function isApiRequest(request) {
     const url = request.url.toLowerCase();
     return API_ENDPOINTS.some(endpoint => url.includes(endpoint)) ||
@@ -103,11 +96,11 @@ function isApiRequest(request) {
         url.includes('/api/');
 }
 
-// 🌐 ESTRATEGIA NETWORK-FIRST (SIEMPRE VERSIÓN MÁS RECIENTE)
+// ESTRATEGIA NETWORK-FIRST (SIEMPRE VERSIÓN MÁS RECIENTE)
 async function handleNetworkFirst(request) {
     try {
         // 1. INTENTAR NETWORK PRIMERO
-        console.log('🌐 Network-First para:', request.url);
+        console.log('Network-First para:', request.url);
         const networkResponse = await fetch(request);
 
         // 2. VERIFICAR SI LA RESPUESTA ES VÁLIDA
@@ -121,12 +114,12 @@ async function handleNetworkFirst(request) {
         throw new Error('Respuesta de red no válida');
 
     } catch (error) {
-        console.log('📴 Network falló, intentando cache:', request.url, error.message);
+        console.log('Network falló, intentando cache:', request.url, error.message);
 
         // 4. FALLBACK AL CACHE
         const cachedResponse = await caches.match(request);
         if (cachedResponse) {
-            console.log('💾 Sirviendo desde cache:', request.url);
+            console.log('Sirviendo desde cache:', request.url);
             return cachedResponse;
         }
 
@@ -145,7 +138,6 @@ async function handleNetworkFirst(request) {
     }
 }
 
-// 🎯 DETERMINAR QUÉ DEBERÍA SER CACHEADO
 function shouldCache(request) {
     const url = request.url.toLowerCase();
 
@@ -160,30 +152,26 @@ function shouldCache(request) {
            request.destination === 'font';
 }
 
-// 💾 CACHEAR RESPUESTA EN SEGUNDO PLANO
 async function cacheResponse(request, response) {
     try {
         const cache = await caches.open(CACHE_NAME);
         await cache.put(request, response);
     } catch (error) {
-        console.log('⚠️ Error actualizando cache:', error);
+        console.log('Error actualizando cache:', error);
     }
 }
 
-// 📄 PÁGINA OFFLINE ELEGANTE
 async function getOfflinePage() {
     try {
-        // Intentar obtener página offline del cache
         const cache = await caches.open(CACHE_NAME);
         const offlinePage = await cache.match('/offline.html');
         if (offlinePage) {
             return offlinePage;
         }
     } catch (error) {
-        console.log('⚠️ No se pudo obtener página offline del cache');
+        console.log('No se pudo obtener página offline del cache');
     }
 
-    // Fallback a página offline generada dinámicamente
     return new Response(`
         <!DOCTYPE html>
         <html lang="es">
@@ -291,14 +279,13 @@ function getContentType(url) {
     return 'text/plain';
 }
 
-// 📱 MANEJADORES OPCIONALES PARA FUTURAS MEJORAS
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
 });
 
-// 🔔 NOTIFICACIONES PUSH (PARA FUTURAS NOTIFICACIONES)
+// NOTIFICACIONES PUSH (PARA FUTURAS NOTIFICACIONES)
 self.addEventListener('push', (event) => {
     if (event.data) {
         const data = event.data.json();

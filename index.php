@@ -8,7 +8,6 @@ require_once __DIR__ . '/phpmailer/PHPMailer.php';
 require_once __DIR__ . '/phpmailer/SMTP.php';
 require_once __DIR__ . '/phpmailer/Exception.php';
 
-// Determinar base URL automáticamente
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $base_url = $protocol . "://" . $_SERVER['HTTP_HOST'];
 
@@ -19,21 +18,18 @@ $database = new Database();
 $db = $database->conectar();
 $sesionControlador = new SesionControlador($db);
 
-// 🆕 DEBUG: Verificar estado de sesión
 error_log("🔍 INDEX.PHP - Estado sesión: " . session_status());
 error_log("🔍 INDEX.PHP - Datos sesión inicial: " . print_r($_SESSION, true));
 
-// 🔒 GENERAR TOKEN CSRF SI NO EXISTE
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// 1. VERIFICAR SI HAY COOKIE DE "RECUÉRDAME" AL CARGAR LA PÁGINA
+
 if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
     $token = $_COOKIE['remember_token'];
 
     try {
-        // Buscar el token en la base de datos CON JOIN PARA OBTENER DATOS DE PERSONA
         $stmt = $db->prepare("SELECT
                                 u.id_usuario,
                                 u.id_rol,
@@ -50,7 +46,6 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($usuario) {
-            // Iniciar sesión automáticamente CON TODOS LOS DATOS
             $_SESSION['usuario_id'] = $usuario['id_usuario'];
             $_SESSION['rol'] = $usuario['id_rol'];
             $_SESSION['nombres'] = $usuario['nombres'];
@@ -58,12 +53,11 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
             $_SESSION['telefono'] = $usuario['telefono'];
             $_SESSION['correo'] = $usuario['correo'];
 
-            // 🆕 FORZAR guardado en Redis
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_write_close();
             }
 
-            error_log("✅ LOGIN AUTOMÁTICO - usuario_id: " . $_SESSION['usuario_id']);
+            error_log("LOGIN AUTOMÁTICO - usuario_id: " . $_SESSION['usuario_id']);
 
             // Redirección según el rol
             if ($usuario['id_rol'] == 1) {
@@ -87,13 +81,11 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
 // 2. MANEJO DEL LOGIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
 
-    // 🔒 VALIDAR TOKEN CSRF
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $error_message = "Token de seguridad inválido. Por favor, recarga la página e intenta nuevamente.";
-        // Regenerar token para el próximo formulario
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     } else {
-        // Verificar si es login normal o recuperación
+
         if (isset($_POST['password'])) {
 
             $correo = trim($_POST['email']);
@@ -103,13 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             $usuario = $sesionControlador->login($correo, $password);
 
             if ($usuario) {
-                // 🆕 Asegurar que la sesión esté activa
                 if (session_status() !== PHP_SESSION_ACTIVE) {
                     error_log("⚠️ Sesión no activa en login, forzando inicio");
                     require_once BASE_PATH . 'config/sessions.php';
                 }
 
-                // ✅ CORRECCIÓN: GUARDAR TODOS LOS DATOS DEL USUARIO (incluyendo de persona)
                 $_SESSION['usuario_id'] = $usuario['id_usuario'];
                 $_SESSION['rol'] = $usuario['id_rol'];
                 $_SESSION['nombres'] = $usuario['nombres'];
@@ -117,8 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 $_SESSION['telefono'] = $usuario['telefono'];
                 $_SESSION['correo'] = $usuario['correo'];
 
-                // 🆕 DEBUG después del login
-                error_log("✅ LOGIN EXITOSO - Datos COMPLETOS guardados:");
+                error_log("LOGIN EXITOSO - Datos COMPLETOS guardados:");
                 error_log("  usuario_id: " . $_SESSION['usuario_id']);
                 error_log("  nombres: " . $_SESSION['nombres']);
                 error_log("  apellidos: " . $_SESSION['apellidos']);
@@ -126,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                 error_log("  correo: " . $_SESSION['correo']);
                 error_log("  session_id: " . session_id());
 
-                // 3. CREAR COOKIE DE "RECUÉRDAME" SI EL USUARIO LO SOLICITÓ
                 if ($remember) {
                     try {
                         $token = bin2hex(random_bytes(32));
@@ -155,7 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
                     }
                 }
 
-                // 🆕 FORZAR guardado en Redis antes de redireccionar
                 if (session_status() === PHP_SESSION_ACTIVE) {
                     session_write_close();
                 }
@@ -175,20 +162,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             $correoRecuperacion = trim($_POST['email']);
             $mensaje_recuperacion = procesarRecuperacion($db, $correoRecuperacion, $base_url);
 
-            // ✅ CORRECIÓN: Guardar mensaje en sesión para mostrarlo después
             $_SESSION['mensaje_recuperacion'] = $mensaje_recuperacion;
 
-            // ✅ Redirigir al mismo index para mostrar el mensaje
             header("Location: index.php");
             exit();
         }
 
-        // 🔒 REGENERAR TOKEN CSRF DESPUÉS DE USO EXITOSO
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 }
 
-// ✅ CORRECIÓN: Mostrar mensaje de recuperación desde sesión
 if (isset($_SESSION['mensaje_recuperacion'])) {
     $mensaje_recuperacion = $_SESSION['mensaje_recuperacion'];
     unset($_SESSION['mensaje_recuperacion']); // Limpiar después de mostrar
@@ -207,7 +190,7 @@ function limpiarTokensExpirados($db) {
 }
 
 // EJECUTAR LIMPIEZA PERIÓDICA
-if (rand(1, 10) === 1) { // 10% de probabilidad en cada carga
+if (rand(1, 10) === 1) {
     try {
         limpiarTokensExpirados($db);
     } catch (Exception $e) {
@@ -252,7 +235,7 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
                     <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
                     <p>
                         <a href='{$link}'
-                           style='background: #1e8ee9; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>
+                            style='background: #1e8ee9; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>
                             Restablecer Contraseña
                         </a>
                     </p>
@@ -279,16 +262,16 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
             curl_close($ch);
 
             if ($httpCode >= 200 && $httpCode < 300) {
-                return "✅ Se ha enviado un enlace de recuperación a: $correoUsuario";
+                return "Se ha enviado un enlace de recuperación a: $correoUsuario";
             }
             else {
-                return "❌ Error al enviar el correo (Código: $httpCode). Respuesta: $response";
+                return "Error al enviar el correo (Código: $httpCode). Respuesta: $response";
             }
         } else {
-            return "❌ Error al generar el enlace de recuperación.";
+            return "Error al generar el enlace de recuperación.";
         }
     } else {
-        return "❌ El correo ingresado no está registrado en nuestro sistema.";
+        return "El correo ingresado no está registrado en nuestro sistema.";
     }
 }
 ?>
@@ -682,7 +665,6 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
       <?php endif; ?>
 
       <form method="POST" action="" id="loginForm" autocomplete="on">
-        <!-- 🔒 CAMPO OCULTO CSRF -->
         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
         <div class="input-box">
@@ -740,7 +722,6 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
         <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
       </div>
       <form method="POST" action="" id="recoveryForm">
-        <!-- 🔒 CAMPO OCULTO CSRF PARA RECUPERACIÓN -->
         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         <div class="input-box">
           <i class="fa-solid fa-envelope"></i>
@@ -752,7 +733,7 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
   </div>
 
   <script>
-    // Validación básica del formulario de login
+    // Validación  del formulario de login
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         const email = document.querySelector('#loginForm input[name="email"]').value;
         const password = document.querySelector('#loginForm input[name="password"]').value;

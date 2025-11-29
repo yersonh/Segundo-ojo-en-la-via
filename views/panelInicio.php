@@ -9,12 +9,10 @@ if (!isset($_SESSION['usuario_id'])) {
 $database = new Database();
 $pdo = $database->conectar();
 
-// Obtener datos del usuario de la sesión
 $usuario_id = $_SESSION['usuario_id'];
 $usuario_nombres = $_SESSION['nombres'] ?? 'Usuario';
 $usuario_correo = $_SESSION['correo'] ?? '';
 
-// CONSULTAR DATOS COMPLETOS DEL USUARIO CON JOIN
 try {
     $stmt = $pdo->prepare("
         SELECT
@@ -54,10 +52,9 @@ try {
     $usuario_telefono = 'Error al cargar';
 }
 
-// Determinar la URL base para el iframe - ACTUALIZADO A HTTPS
+
 $baseUrl = 'https://' . $_SERVER['HTTP_HOST'];
 if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
-    // Para desarrollo local, mantener HTTP si no tienes SSL configurado
     $baseUrl = 'http://localhost:8080';
 }
 $mapUrl = $baseUrl . '/views/vermapa.php';
@@ -82,7 +79,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         window.usuarioTelefono = <?php echo json_encode($usuario_telefono ?? ''); ?>;
         window.usuarioFotoPerfil = <?php echo json_encode($foto_perfil ?? ''); ?>;
 
-        console.log('👤 Usuario cargado:', {
+        console.log('Usuario cargado:', {
             id: window.usuarioId,
             nombres: window.usuarioNombres,
             apellidos: window.usuarioApellidos,
@@ -92,7 +89,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         });
     </script>
 
-    <!-- Forzar HTTPS en producción -->
     <?php if ($_SERVER['HTTP_HOST'] !== 'localhost:8080'): ?>
     <script>
         if (location.protocol !== 'https:') {
@@ -300,7 +296,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         gap: 10px;
     }
 
-    /* 🆕 ESTILOS MEJORADOS PARA LA CONFIRMACIÓN DE FOTO */
     .photo-confirmation-modal {
         position: fixed;
         top: 0;
@@ -483,14 +478,13 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 </head>
 <body>
     <div class="app">
-        <!-- Header SIMPLIFICADO - Solo el logo -->
+        <!-- Header-->
         <header class="app-header">
             <div class="logo">
                 <i class="fas fa-eye"></i>
                 <span>Ojo en la Vía</span>
             </div>
             <div class="user-menu">
-                <!-- Aquí estaba el área del usuario que QUITÉ -->
             </div>
         </header>
 
@@ -506,7 +500,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
             <div id="feedView">
                 <div class="feed-container">
                     <div class="posts-grid" id="postsContainer">
-                        <!-- Los reportes se cargarán aquí dinámicamente -->
+                        <!-- Los reportes se cargarán aquí -->
                     </div>
 
                     <!-- Estado de carga -->
@@ -544,7 +538,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 </button>
             </div>
 
-            <!-- Perfil - DENTRO del mainContent -->
+            <!-- Perfil -->
             <div id="profileView" style="display:none;">
                 <div class="profile-container">
                     <!-- Header Hero -->
@@ -553,9 +547,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                             <div class="profile-avatar-container">
                                 <?php if (!empty($foto_perfil)): ?>
                                     <img id="profileAvatar" class="profile-main-avatar"
-                                         src="<?php echo htmlspecialchars($foto_perfil); ?>"
-                                         alt="Avatar del usuario"
-                                         onerror="this.style.display='none'; document.getElementById('defaultProfileAvatar').style.display='flex';">
+                                        src="<?php echo htmlspecialchars($foto_perfil); ?>"
+                                        alt="Avatar del usuario"
+                                        onerror="this.style.display='none'; document.getElementById('defaultProfileAvatar').style.display='flex';">
                                     <div id="defaultProfileAvatar" class="profile-default-avatar" style="display: none;">
                                         <?php echo strtoupper(substr($usuario_nombres, 0, 1) . substr($usuario_apellidos ?? '', 0, 1)); ?>
                                     </div>
@@ -564,12 +558,12 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                                         <?php echo strtoupper(substr($usuario_nombres, 0, 1) . substr($usuario_apellidos ?? '', 0, 1)); ?>
                                     </div>
                                     <img id="profileAvatar" class="profile-main-avatar" style="display: none;"
-                                         src="" alt="Avatar del usuario">
+                                        src="" alt="Avatar del usuario">
                                 <?php endif; ?>
                                 <div class="avatar-edit-btn" id="editAvatarBtn" title="Cambiar foto de perfil">
                                     <i class="fas fa-camera"></i>
                                 </div>
-                                <!-- 🆕 Badge sutil para indicar foto pendiente -->
+
                                 <div id="photoPendingBadge" class="photo-pending-badge" style="display: none;">
                                     <i class="fas fa-clock"></i>
                                 </div>
@@ -739,12 +733,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     </div>
                 </div>
             </div>
-            <!-- FIN del profileView -->
 
         </div>
-        <!-- FIN del mainContent -->
 
-        <!-- 🆕 MODAL PROFESIONAL PARA CONFIRMACIÓN DE FOTO -->
         <div id="photoConfirmationModal" class="photo-confirmation-modal">
             <div class="photo-confirmation-content">
                 <div class="photo-preview-container">
@@ -918,7 +909,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         // Variable global con la URL del mapa
         const mapUrl = '<?php echo $mapUrl; ?>';
 
-        // GESTIÓN COMPLETA DEL PERFIL CON MODAL PROFESIONAL
         class ProfileManager {
             constructor() {
                 this.isEditing = false;
@@ -927,7 +917,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
             }
 
             init() {
-                console.log('👤 Inicializando ProfileManager...');
+                console.log('Inicializando ProfileManager...');
                 this.setupEventListeners();
                 this.setupPhotoUpload();
             }
@@ -973,9 +963,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     fotoPerfilInput.addEventListener('change', (e) => {
                         this.handleImageUpload(e);
                     });
-                    console.log('✅ Configuración de subida de foto completada');
+                    console.log('Configuración de subida de foto completada');
                 } else {
-                    console.warn('⚠️ Elementos de subida de foto no encontrados');
+                    console.warn('Elementos de subida de foto no encontrados');
                 }
             }
 
@@ -985,12 +975,12 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                 // Validaciones
                 if (!file.type.startsWith('image/')) {
-                    this.mostrarNotificacion('❌ Por favor selecciona una imagen válida', 'error');
+                    this.mostrarNotificacion('Por favor selecciona una imagen válida', 'error');
                     return;
                 }
 
                 if (file.size > 5 * 1024 * 1024) {
-                    this.mostrarNotificacion('❌ La imagen debe ser menor a 5MB', 'error');
+                    this.mostrarNotificacion('La imagen debe ser menor a 5MB', 'error');
                     return;
                 }
 
@@ -1005,7 +995,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 reader.readAsDataURL(file);
             }
 
-            // 🆕 MÉTODO MEJORADO - Mostrar modal profesional
             mostrarModalConfirmacion(imageDataUrl) {
                 const modal = document.getElementById('photoConfirmationModal');
                 const preview = document.getElementById('confirmationPhotoPreview');
@@ -1026,7 +1015,6 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 document.body.style.overflow = 'hidden';
             }
 
-            // 🆕 MÉTODO MEJORADO - Ocultar modal
             ocultarModalConfirmacion() {
                 const modal = document.getElementById('photoConfirmationModal');
                 const badge = document.getElementById('photoPendingBadge');
@@ -1041,10 +1029,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 document.body.style.overflow = '';
             }
 
-            // MÉTODO MODIFICADO - Guarda la foto inmediatamente al confirmar
             async confirmarFoto() {
                 if (!this.tempPhotoFile) {
-                    this.mostrarNotificacion('❌ No hay foto para confirmar', 'error');
+                    this.mostrarNotificacion('No hay foto para confirmar', 'error');
                     return;
                 }
 
@@ -1056,7 +1043,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                         confirmBtn.disabled = true;
                     }
 
-                    console.log('🔄 Subiendo foto de perfil...');
+                    console.log('Subiendo foto de perfil...');
 
                     // Crear FormData para enviar solo la foto
                     const formData = new FormData();
@@ -1070,7 +1057,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                     if (response.ok) {
                         const result = await response.json();
-                        console.log('📨 Respuesta del servidor:', result);
+                        console.log('Respuesta del servidor:', result);
 
                         if (result.success) {
                             // ACTUALIZAR INMEDIATAMENTE la foto en la UI
@@ -1088,7 +1075,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                                 fotoInput.value = '';
                             }
 
-                            this.mostrarNotificacion('✅ Foto de perfil actualizada correctamente', 'success');
+                            this.mostrarNotificacion('Foto de perfil actualizada correctamente', 'success');
                         } else {
                             throw new Error(result.message || 'Error al actualizar foto');
                         }
@@ -1098,7 +1085,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                 } catch (error) {
                     console.error('Error al confirmar foto:', error);
-                    this.mostrarNotificacion('❌ Error al actualizar foto: ' + error.message, 'error');
+                    this.mostrarNotificacion('Error al actualizar foto: ' + error.message, 'error');
 
                     // Restaurar botón de confirmar
                     const confirmBtn = document.querySelector('.btn-confirm');
@@ -1125,12 +1112,12 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     fotoInput.value = '';
                 }
 
-                this.mostrarNotificacion('❌ Foto cancelada', 'info');
+                this.mostrarNotificacion(' Foto cancelada', 'info');
             }
 
-            // Método para actualizar la foto en la UI inmediatamente
+            // Método para actualizar la foto
             actualizarFotoEnUI(nuevaFotoUrl) {
-                console.log('🖼️ Actualizando avatar con nueva URL:', nuevaFotoUrl);
+                console.log('Actualizando avatar con nueva URL:', nuevaFotoUrl);
 
                 const profileAvatar = document.getElementById('profileAvatar');
                 const defaultProfileAvatar = document.getElementById('defaultProfileAvatar');
@@ -1149,12 +1136,11 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                         // Actualizar también en la sesión/variable global
                         window.usuarioFotoPerfil = finalUrl;
-                        console.log('✅ Avatar actualizado inmediatamente');
+                        console.log('Avatar actualizado inmediatamente');
                     }
                 }
             }
 
-            // MODIFICAR guardarPerfil para que NO maneje fotos
             async guardarPerfil() {
                 try {
                     const formData = new FormData();
@@ -1165,7 +1151,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     formData.append('telefono', document.getElementById('inpTelefono').value);
                     formData.append('action', 'actualizar_perfil');
 
-                    console.log('🔄 Guardando datos del perfil...');
+                    console.log('Guardando datos del perfil...');
 
                     // Mostrar loading
                     const btnSave = document.getElementById('btnSaveProfile');
@@ -1180,13 +1166,13 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                     if (response.ok) {
                         const result = await response.json();
-                        console.log('📨 Respuesta del servidor:', result);
+                        console.log(' Respuesta del servidor:', result);
 
                         if (result.success) {
                             // Actualizar la UI con los nuevos datos
                             this.actualizarUI(result.data);
 
-                            this.mostrarNotificacion('✅ Perfil actualizado correctamente', 'success');
+                            this.mostrarNotificacion('Perfil actualizado correctamente', 'success');
 
                             // Salir del modo edición
                             this.toggleEditMode();
@@ -1199,7 +1185,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                 } catch (error) {
                     console.error('Error al guardar perfil:', error);
-                    this.mostrarNotificacion('❌ Error al actualizar perfil: ' + error.message, 'error');
+                    this.mostrarNotificacion('Error al actualizar perfil: ' + error.message, 'error');
                 } finally {
                     // Restaurar botón
                     const btnSave = document.getElementById('btnSaveProfile');
@@ -1219,7 +1205,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                 if (this.isEditing) {
                     profileInfo.style.display = 'none';
                     profileForm.style.display = 'block';
-                    console.log('📝 Modo edición activado');
+                    console.log(' Modo edición activado');
                 } else {
                     // Al cancelar, limpiar foto temporal si existe
                     if (this.tempPhotoFile) {
@@ -1228,12 +1214,12 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
 
                     profileInfo.style.display = 'block';
                     profileForm.style.display = 'none';
-                    console.log('👀 Modo visualización activado');
+                    console.log('Modo visualización activado');
                 }
             }
 
             actualizarUI(userData) {
-                console.log('🔄 Actualizando UI con:', userData);
+                console.log('Actualizando UI con:', userData);
 
                 const elementsToUpdate = {
                     'profileName': userData.nombres + ' ' + userData.apellidos,
@@ -1250,7 +1236,7 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
                     }
                 }
 
-                console.log('✅ UI actualizada con nuevos datos');
+                console.log('UI actualizada con nuevos datos');
             }
 
             restaurarAvatarOriginal() {
@@ -1429,9 +1415,9 @@ $mapUrl = $baseUrl . '/views/vermapa.php';
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof ComentariosManager !== 'undefined') {
                 ComentariosManager.inicializar();
-                console.log('✅ ComentariosManager inicializado correctamente');
+                console.log('ComentariosManager inicializado correctamente');
             } else {
-                console.error('❌ ComentariosManager no está definidao');
+                console.error('ComentariosManager no está definidao');
             }
         });
     </script>
