@@ -583,7 +583,6 @@ window.toggleLike = async function(id_reporte, btn) {
 // Función para crear elemento de post
 function crearPostElement(reporte) {
     try {
-        // 🆕 MEJOR MANEJO DE FOTO DE PERFIL
         let avatarUrl = '/imagenes/default-avatar.png';
 
         if (reporte.foto_perfil &&
@@ -602,7 +601,6 @@ function crearPostElement(reporte) {
             }
         }
 
-        // 🆕 USAR NOMBRE REAL O CORREO
         const nombreUsuario = (reporte.nombres && reporte.apellidos)
             ? `${reporte.nombres} ${reporte.apellidos}`.trim()
             : (reporte.usuario ? reporte.usuario.split('@')[0] : 'Usuario');
@@ -618,7 +616,7 @@ function crearPostElement(reporte) {
         div.innerHTML = `
             <div class="post-header">
                 <img src="${avatarUrl}" class="avatar" alt="${nombreUsuario}"
-                     onerror="this.src='${window.location.origin}/imagenes/default-avatar.png'">
+                    onerror="this.src='${window.location.origin}/imagenes/default-avatar.png'">
                 <div class="user-info">
                     <div class="user-name">${escapeHtml(nombreUsuario)}</div>
                     <div class="post-meta">

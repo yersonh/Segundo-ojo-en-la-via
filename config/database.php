@@ -17,7 +17,6 @@ class Database {
         $databaseUrl = getenv('DATABASE_URL');
 
         if ($databaseUrl) {
-            // Parsear la URL de Railway (PRODUCCIÓN)
             $dbParts = parse_url($databaseUrl);
 
             $this->host = $dbParts['host'] ?? '';

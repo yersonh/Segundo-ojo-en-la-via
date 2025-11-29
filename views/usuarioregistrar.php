@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/bootstrap_session.php';
-// Content Security Policy en una sola línea
+
 header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self'; frame-src 'none'; object-src 'none';");
 
 // Medidas de seguridad adicionales
@@ -8,11 +8,10 @@ header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 
-// Iniciar sesión para CSRF token
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../controllers/sesioncontrolador.php';
 
-// Generar token CSRF si no existe
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -83,12 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
         $_SESSION = [];
 
         echo "<script>
-            alert('✅ Usuario registrado correctamente.');
+            alert('Usuario registrado correctamente.');
             window.location.href = '../index.php';
         </script>";
         exit;
     } else {
-        echo "<script>alert('❌ Error al registrar usuario.');</script>";
+        echo "<script>alert('Error al registrar usuario.');</script>";
     }
 }
 ?>
@@ -300,20 +299,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             <div class="form-group">
                 <label for="nombres">Nombres:</label>
                 <input type="text" id="nombres" name="nombres" placeholder="Ingresa tus nombres"
-                       maxlength="50" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+" required>
+                    maxlength="50" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+" required>
             </div>
 
             <div class="form-group">
                 <label for="apellidos">Apellidos:</label>
                 <input type="text" id="apellidos" name="apellidos" placeholder="Ingresa tus apellidos"
-                       maxlength="50" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+" required>
+                    maxlength="50" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+" required>
             </div>
 
             <div class="form-group">
                 <label for="correo">Correo electrónico:</label>
                 <div class="input-group">
                     <input type="email" id="correo" name="correo" placeholder="ejemplo@correo.com"
-                           maxlength="100" required>
+                        maxlength="100" required>
                     <span id="correo-alerta" class="icono-alerta" title="Este correo ya está registrado">⚠️</span>
                 </div>
                 <small id="mensaje-error" class="mensaje-error"></small>
@@ -322,15 +321,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             <div class="form-group">
                 <label for="telefono">Teléfono:</label>
                 <input type="tel" id="telefono" name="telefono" placeholder="Ingresa tu teléfono"
-                       pattern="[0-9]{7,15}" maxlength="15" required>
+                    pattern="[0-9]{7,15}" maxlength="15" required>
                 <small style="color: #ccc;">Solo números, 7-15 dígitos</small>
             </div>
 
             <div class="form-group">
                 <label for="password">Contraseña:</label>
                 <input type="password" id="password" name="password"
-                       placeholder="Mínimo 8 caracteres con mayúsculas, minúsculas y números"
-                       minlength="8" required>
+                    placeholder="Mínimo 8 caracteres con mayúsculas, minúsculas y números"
+                    minlength="8" required>
                 <div id="password-strength" class="password-strength"></div>
             </div>
 
@@ -475,13 +474,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             // Validar fortaleza de contraseña
             if (password.length < 8) {
                 e.preventDefault();
-                mostrarAlerta("❌ La contraseña debe tener al menos 8 caracteres.", "error");
+                mostrarAlerta("La contraseña debe tener al menos 8 caracteres.", "error");
                 return false;
             }
 
             if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(password)) {
                 e.preventDefault();
-                mostrarAlerta("❌ La contraseña debe contener mayúsculas, minúsculas y números.", "error");
+                mostrarAlerta("La contraseña debe contener mayúsculas, minúsculas y números.", "error");
                 return false;
             }
 
@@ -489,7 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             for (let campo of campos) {
                 if (!document.getElementById(campo).value.trim()) {
                     e.preventDefault();
-                    mostrarAlerta("❌ Por favor, completa todos los campos.", "error");
+                    mostrarAlerta("Por favor, completa todos los campos.", "error");
                     return false;
                 }
             }

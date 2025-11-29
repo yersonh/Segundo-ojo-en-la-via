@@ -11,21 +11,19 @@ class SSENotificacionesManager {
     }
 
     inicializar() {
-        console.log('🔔 Inicializando SSE unificado para notificaciones...');
         this.conectar();
         this.configurarEventosVisibilidad();
     }
 
-    // 🎛️ REGISTRAR MANEJADORES PERSONALIZADOS
     registrarManejador(evento, manejador) {
         this.manejadoresPersonalizados.push({ evento, manejador });
-        console.log(`🎯 Manejador registrado para evento: ${evento}`);
+        console.log(`Manejador registrado para evento: ${evento}`);
     }
 
     configurarEventosVisibilidad() {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && !this.isConnected) {
-                console.log('🔄 Página visible - reconectando SSE');
+                console.log('Página visible - reconectando SSE');
                 this.reconectar();
             }
         });
@@ -38,14 +36,14 @@ class SSENotificacionesManager {
             }
 
             const sseUrl = '../../controllers/sse_notificaciones.php';
-            console.log('🔗 Conectando a SSE unificado:', sseUrl);
+            console.log('Conectando a SSE unificado:', sseUrl);
 
             this.eventSource = new EventSource(sseUrl, {
                 withCredentials: true
             });
 
             this.eventSource.onopen = () => {
-                console.log('✅ Conexión SSE unificada establecida');
+                console.log('Conexión SSE unificada establecida');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
 
@@ -55,7 +53,7 @@ class SSENotificacionesManager {
 
             this.eventSource.addEventListener('ping', (event) => {
                 const data = JSON.parse(event.data);
-                console.log('📡 Ping SSE recibido', data);
+                console.log('Ping SSE recibido', data);
                 this.userRole = data.user_role;
 
                 // Notificar a los manejadores personalizados
@@ -65,7 +63,7 @@ class SSENotificacionesManager {
             // NOTIFICACIONES PARA USUARIOS NORMALES
             this.eventSource.addEventListener('notificacion', (event) => {
                 const data = JSON.parse(event.data);
-                console.log('🔔 Notificación usuario recibida:', data);
+                console.log('Notificación usuario recibida:', data);
 
                 if (data.type === 'nuevas_notificaciones' && data.for_user) {
                     this.manejarNuevasNotificacionesUsuario(data);
@@ -78,7 +76,7 @@ class SSENotificacionesManager {
             // NOTIFICACIONES PARA ADMIN
             this.eventSource.addEventListener('nuevo_reporte', (event) => {
                 const data = JSON.parse(event.data);
-                console.log('🚨 Notificación admin recibida:', data);
+                console.log('Notificación admin recibida:', data);
                 this.manejarNuevoReporteAdmin(data);
 
                 // Notificar a los manejadores personalizados
@@ -87,7 +85,7 @@ class SSENotificacionesManager {
 
             this.eventSource.addEventListener('connected', (event) => {
                 const data = JSON.parse(event.data);
-                console.log('✅ Conectado al servidor SSE, user_id:', data.user_id, 'rol:', data.user_role);
+                console.log('Conectado al servidor SSE, user_id:', data.user_id, 'rol:', data.user_role);
                 this.userRole = data.user_role;
 
                 // Notificar a los manejadores personalizados
@@ -95,7 +93,7 @@ class SSENotificacionesManager {
             });
 
             this.eventSource.onerror = (error) => {
-                console.error('❌ Error en conexión SSE:', error);
+                console.error('Error en conexión SSE:', error);
                 this.isConnected = false;
                 this.manejarErrorConexion();
 
@@ -104,7 +102,7 @@ class SSENotificacionesManager {
             };
 
         } catch (error) {
-            console.error('❌ Error inicializando SSE:', error);
+            console.error('Error inicializando SSE:', error);
             this.manejarErrorConexion();
 
             // Notificar a los manejadores personalizados
@@ -112,7 +110,6 @@ class SSENotificacionesManager {
         }
     }
 
-    // 🎯 EJECUTAR MANEJADORES PERSONALIZADOS
     ejecutarManejadores(evento, data) {
         this.manejadoresPersonalizados.forEach(({ evento: evt, manejador }) => {
             if (evt === evento) {
@@ -180,7 +177,7 @@ class SSENotificacionesManager {
 
     mostrarToastNotificacionAdmin(data) {
         const tipoIncidente = data.tipo_incidente || 'Incidente';
-        const mensaje = `🚨 Nuevo reporte: ${tipoIncidente}`;
+        const mensaje = `Nuevo reporte: ${tipoIncidente}`;
 
         this.crearToast(mensaje, 'fas fa-exclamation-triangle', 'admin', data);
     }
