@@ -12,8 +12,8 @@ require_once __DIR__ . '/phpmailer/Exception.php';
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $base_url = $protocol . "://" . $_SERVER['HTTP_HOST'];
 
-/*use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;*/
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 $database = new Database();
 $db = $database->conectar();
@@ -22,6 +22,11 @@ $sesionControlador = new SesionControlador($db);
 // 🆕 DEBUG: Verificar estado de sesión
 error_log("🔍 INDEX.PHP - Estado sesión: " . session_status());
 error_log("🔍 INDEX.PHP - Datos sesión inicial: " . print_r($_SESSION, true));
+
+// 🔒 GENERAR TOKEN CSRF SI NO EXISTE
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // 1. VERIFICAR SI HAY COOKIE DE "RECUÉRDAME" AL CARGAR LA PÁGINA
 if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
@@ -81,94 +86,105 @@ if (!isset($_SESSION['usuario_id']) && isset($_COOKIE['remember_token'])) {
 
 // 2. MANEJO DEL LOGIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
-    // Verificar si es login normal o recuperación
-    if (isset($_POST['password'])) {
 
-        $correo = trim($_POST['email']);
-        $password = $_POST['password'];
-        $remember = isset($_POST['remember']) && $_POST['remember'] == 'on';
-
-        $usuario = $sesionControlador->login($correo, $password);
-
-        if ($usuario) {
-            // 🆕 Asegurar que la sesión esté activa
-            if (session_status() !== PHP_SESSION_ACTIVE) {
-                error_log("⚠️ Sesión no activa en login, forzando inicio");
-                require_once BASE_PATH . 'config/sessions.php';
-            }
-
-            // ✅ CORRECCIÓN: GUARDAR TODOS LOS DATOS DEL USUARIO (incluyendo de persona)
-            $_SESSION['usuario_id'] = $usuario['id_usuario'];
-            $_SESSION['rol'] = $usuario['id_rol'];
-            $_SESSION['nombres'] = $usuario['nombres'];
-            $_SESSION['apellidos'] = $usuario['apellidos'];
-            $_SESSION['telefono'] = $usuario['telefono'];
-            $_SESSION['correo'] = $usuario['correo'];
-
-            // 🆕 DEBUG después del login
-            error_log("✅ LOGIN EXITOSO - Datos COMPLETOS guardados:");
-            error_log("  usuario_id: " . $_SESSION['usuario_id']);
-            error_log("  nombres: " . $_SESSION['nombres']);
-            error_log("  apellidos: " . $_SESSION['apellidos']);
-            error_log("  telefono: " . $_SESSION['telefono']);
-            error_log("  correo: " . $_SESSION['correo']);
-            error_log("  session_id: " . session_id());
-
-            // 3. CREAR COOKIE DE "RECUÉRDAME" SI EL USUARIO LO SOLICITÓ
-            if ($remember) {
-                try {
-                    $token = bin2hex(random_bytes(32));
-                    $expiracion = date("Y-m-d H:i:s", strtotime("+30 days")); // 30 días
-
-                    // Guardar token en la base de datos
-                    $stmt = $db->prepare("INSERT INTO remember_tokens (id_usuario, token, expiracion)
-                                         VALUES (:id_usuario, :token, :expiracion)");
-                    $stmt->bindParam(':id_usuario', $usuario['id_usuario']);
-                    $stmt->bindParam(':token', $token);
-                    $stmt->bindParam(':expiracion', $expiracion);
-                    $stmt->execute();
-
-                    // Crear cookie segura (30 días)
-                    setcookie('remember_token', $token, [
-                        'expires' => time() + (30 * 24 * 60 * 60),
-                        'path' => '/',
-                        'domain' => $_SERVER['HTTP_HOST'],
-                        'secure' => ($protocol === 'https'),
-                        'httponly' => true,
-                        'samesite' => 'Strict'
-                    ]);
-                } catch (PDOException $e) {
-                    // Si hay error al insertar, simplemente continuar sin recordar
-                    error_log("Error al crear token de recordar: " . $e->getMessage());
-                }
-            }
-
-            // 🆕 FORZAR guardado en Redis antes de redireccionar
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-
-            // Redirección según el rol del usuario
-            if ($usuario['id_rol'] == 1) {
-                header("Location: views/admin.php");
-            } else {
-                header("Location: views/panelInicio.php");
-            }
-            exit();
-        } else {
-            $error_message = "Credenciales incorrectas o cuenta inactiva.";
-        }
+    // 🔒 VALIDAR TOKEN CSRF
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $error_message = "Token de seguridad inválido. Por favor, recarga la página e intenta nuevamente.";
+        // Regenerar token para el próximo formulario
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     } else {
-         // Procesar recuperación de contraseña
-        $correoRecuperacion = trim($_POST['email']);
-        $mensaje_recuperacion = procesarRecuperacion($db, $correoRecuperacion, $base_url);
+        // Verificar si es login normal o recuperación
+        if (isset($_POST['password'])) {
 
-        // ✅ CORRECIÓN: Guardar mensaje en sesión para mostrarlo después
-        $_SESSION['mensaje_recuperacion'] = $mensaje_recuperacion;
+            $correo = trim($_POST['email']);
+            $password = $_POST['password'];
+            $remember = isset($_POST['remember']) && $_POST['remember'] == 'on';
 
-        // ✅ Redirigir al mismo index para mostrar el mensaje
-        header("Location: index.php");
-        exit();
+            $usuario = $sesionControlador->login($correo, $password);
+
+            if ($usuario) {
+                // 🆕 Asegurar que la sesión esté activa
+                if (session_status() !== PHP_SESSION_ACTIVE) {
+                    error_log("⚠️ Sesión no activa en login, forzando inicio");
+                    require_once BASE_PATH . 'config/sessions.php';
+                }
+
+                // ✅ CORRECCIÓN: GUARDAR TODOS LOS DATOS DEL USUARIO (incluyendo de persona)
+                $_SESSION['usuario_id'] = $usuario['id_usuario'];
+                $_SESSION['rol'] = $usuario['id_rol'];
+                $_SESSION['nombres'] = $usuario['nombres'];
+                $_SESSION['apellidos'] = $usuario['apellidos'];
+                $_SESSION['telefono'] = $usuario['telefono'];
+                $_SESSION['correo'] = $usuario['correo'];
+
+                // 🆕 DEBUG después del login
+                error_log("✅ LOGIN EXITOSO - Datos COMPLETOS guardados:");
+                error_log("  usuario_id: " . $_SESSION['usuario_id']);
+                error_log("  nombres: " . $_SESSION['nombres']);
+                error_log("  apellidos: " . $_SESSION['apellidos']);
+                error_log("  telefono: " . $_SESSION['telefono']);
+                error_log("  correo: " . $_SESSION['correo']);
+                error_log("  session_id: " . session_id());
+
+                // 3. CREAR COOKIE DE "RECUÉRDAME" SI EL USUARIO LO SOLICITÓ
+                if ($remember) {
+                    try {
+                        $token = bin2hex(random_bytes(32));
+                        $expiracion = date("Y-m-d H:i:s", strtotime("+30 days")); // 30 días
+
+                        // Guardar token en la base de datos
+                        $stmt = $db->prepare("INSERT INTO remember_tokens (id_usuario, token, expiracion)
+                                             VALUES (:id_usuario, :token, :expiracion)");
+                        $stmt->bindParam(':id_usuario', $usuario['id_usuario']);
+                        $stmt->bindParam(':token', $token);
+                        $stmt->bindParam(':expiracion', $expiracion);
+                        $stmt->execute();
+
+                        // Crear cookie segura (30 días)
+                        setcookie('remember_token', $token, [
+                            'expires' => time() + (30 * 24 * 60 * 60),
+                            'path' => '/',
+                            'domain' => $_SERVER['HTTP_HOST'],
+                            'secure' => ($protocol === 'https'),
+                            'httponly' => true,
+                            'samesite' => 'Strict'
+                        ]);
+                    } catch (PDOException $e) {
+                        // Si hay error al insertar, simplemente continuar sin recordar
+                        error_log("Error al crear token de recordar: " . $e->getMessage());
+                    }
+                }
+
+                // 🆕 FORZAR guardado en Redis antes de redireccionar
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_write_close();
+                }
+
+                // Redirección según el rol del usuario
+                if ($usuario['id_rol'] == 1) {
+                    header("Location: views/admin.php");
+                } else {
+                    header("Location: views/panelInicio.php");
+                }
+                exit();
+            } else {
+                $error_message = "Credenciales incorrectas o cuenta inactiva.";
+            }
+        } else {
+             // Procesar recuperación de contraseña
+            $correoRecuperacion = trim($_POST['email']);
+            $mensaje_recuperacion = procesarRecuperacion($db, $correoRecuperacion, $base_url);
+
+            // ✅ CORRECIÓN: Guardar mensaje en sesión para mostrarlo después
+            $_SESSION['mensaje_recuperacion'] = $mensaje_recuperacion;
+
+            // ✅ Redirigir al mismo index para mostrar el mensaje
+            header("Location: index.php");
+            exit();
+        }
+
+        // 🔒 REGENERAR TOKEN CSRF DESPUÉS DE USO EXITOSO
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 }
 
@@ -666,6 +682,9 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
       <?php endif; ?>
 
       <form method="POST" action="" id="loginForm" autocomplete="on">
+        <!-- 🔒 CAMPO OCULTO CSRF -->
+        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+
         <div class="input-box">
             <i class="fa-solid fa-envelope"></i>
             <input
@@ -721,6 +740,8 @@ function procesarRecuperacion($db, $correoUsuario, $base_url) {
         <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
       </div>
       <form method="POST" action="" id="recoveryForm">
+        <!-- 🔒 CAMPO OCULTO CSRF PARA RECUPERACIÓN -->
+        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         <div class="input-box">
           <i class="fa-solid fa-envelope"></i>
           <input type="email" name="email" placeholder="Tu correo electrónico" required autocomplete="email">
