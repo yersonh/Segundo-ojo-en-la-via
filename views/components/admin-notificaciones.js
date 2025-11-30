@@ -653,16 +653,13 @@ class NotificationManager {
 
     async marcarComoLeida(idNotificacion, element) {
         try {
-            // 🆕 ACTUALIZAR INTERFAZ INMEDIATAMENTE
             element.classList.remove('no-leida');
             element.querySelector('.btn-marcar-leida')?.remove();
 
-            // 🆕 ACTUALIZAR CONTADOR DESDE DOM REAL
             this.actualizarContadorDesdeDOM();
 
             this.showToast('Notificación marcada como leída', 'success');
 
-            // 🆕 OPCIONAL: Enviar al servidor (pero no es crítico)
             console.log('📝 Notificación marcada como leída localmente:', idNotificacion);
 
         } catch (error) {
@@ -673,18 +670,15 @@ class NotificationManager {
 
     async marcarTodasLeidas() {
         try {
-            // 🆕 ACTUALIZAR INTERFAZ INMEDIATAMENTE
             document.querySelectorAll('.notificacion-item.no-leida').forEach(item => {
                 item.classList.remove('no-leida');
                 item.querySelector('.btn-marcar-leida')?.remove();
             });
 
-            // 🆕 ACTUALIZAR CONTADOR A CERO
             this.actualizarContadorNotificaciones(0);
 
             this.showToast('Todas las notificaciones marcadas como leídas', 'success');
 
-            // 🆕 OPCIONAL: Enviar al servidor (pero no es crítico)
             console.log('📝 Todas las notificaciones marcadas como leídas localmente');
 
         } catch (error) {
@@ -693,7 +687,6 @@ class NotificationManager {
         }
     }
 
-    // 🆕 MÉTODO MEJORADO PARA ACTUALIZAR CONTADOR
     actualizarContadorNotificaciones(total) {
         const badge = document.querySelector('.notificacion-badge');
         const countElement = document.querySelector('.notificacion-count');
@@ -718,12 +711,9 @@ class NotificationManager {
             this.mostrarMensajePanelVacio('No hay notificaciones nuevas');
             return;
         }
-
-        // 🆕 ESTE MÉTODO YA NO SE USA - las notificaciones se agregan una por una
     }
 }
 
-// Inicialización mejorada con manejo de errores
 document.addEventListener('DOMContentLoaded', function() {
     // Solo inicializar si estamos en una página de admin
     if (window.location.pathname.includes('admin.php') ||
@@ -733,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.notificationManager = new NotificationManager();
             window.notificationManager.initialize();
 
-            console.log('✅ NotificationManager inicializado correctamente');
+            console.log('NotificationManager inicializado correctamente');
 
             // Solicitar permisos de notificación después de un delay
             if ("Notification" in window && Notification.permission === "default") {
@@ -746,21 +736,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 3000);
             }
         } catch (error) {
-            console.error('❌ Error inicializando NotificationManager:', error);
+            console.error('Error inicializando NotificationManager:', error);
         }
     }
 });
 
-// 🆕 Asegurar que se limpien los recursos incluso si hay errores
 window.addEventListener('error', function() {
     if (window.notificationManager) {
         window.notificationManager.destroy();
     }
 });
 
-// 🆕 Manejar excepciones no capturadas
 window.addEventListener('unhandledrejection', function(event) {
-    console.error('❌ Promesa rechazada no manejada:', event.reason);
+    console.error('romesa rechazada no manejada:', event.reason);
     if (window.notificationManager) {
         window.notificationManager.destroy();
     }

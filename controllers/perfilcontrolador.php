@@ -1,5 +1,4 @@
 <?php
-// controllers/perfilcontrolador.php - ACTUALIZADO para manejar foto separadamente
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/bootstrap_session.php';
 
@@ -14,7 +13,6 @@ if (!isset($_SESSION['usuario_id'])) {
     exit();
 }
 
-// NUEVA ACCIÓN para actualizar solo la foto
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'actualizar_foto_perfil') {
     try {
         $database = new Database();
@@ -33,11 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         $id_persona = $usuario['id_persona'];
 
-        // Manejar upload de imagen
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
             $foto = $_FILES['foto_perfil'];
 
-            // Validaciones de imagen
             $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
             if (!in_array($foto['type'], $allowed_types)) {
                 throw new Exception('Formato de imagen no permitido');
@@ -63,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $stmt = $pdo->prepare("UPDATE persona SET foto_perfil = ? WHERE id_persona = ?");
                 $stmt->execute([$foto_perfil, $id_persona]);
 
-                // Actualizar sesión
+
                 $_SESSION['foto_perfil'] = $foto_perfil;
 
                 echo json_encode([
@@ -86,7 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ]);
     }
 }
-// Acción original para actualizar datos del perfil (sin foto)
 else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'actualizar_perfil') {
     try {
         $database = new Database();
@@ -97,12 +92,10 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_P
         $apellidos = trim($_POST['apellidos'] ?? '');
         $telefono = trim($_POST['telefono'] ?? '');
 
-        // Validaciones
         if (empty($nombres)) {
             throw new Exception('El nombre es obligatorio');
         }
 
-        // Obtener id_persona
         $stmt = $pdo->prepare("SELECT id_persona FROM usuario WHERE id_usuario = ?");
         $stmt->execute([$usuario_id]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -113,7 +106,6 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_P
 
         $id_persona = $usuario['id_persona'];
 
-        // Actualizar datos (sin foto)
         $stmt = $pdo->prepare("
             UPDATE persona
             SET nombres = ?, apellidos = ?, telefono = ?
@@ -121,7 +113,6 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_P
         ");
         $stmt->execute([$nombres, $apellidos, $telefono, $id_persona]);
 
-        // Actualizar sesión
         $_SESSION['nombres'] = $nombres;
         $_SESSION['apellidos'] = $apellidos;
         $_SESSION['telefono'] = $telefono;

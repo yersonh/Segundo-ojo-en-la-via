@@ -12,7 +12,6 @@ class SesionControlador {
     }
 
     public function registrar($nombres, $apellidos, $correo, $telefono, $id_rol, $id_estado, $password) {
-        // Validar si el correo ya existe en la tabla usuario
         if ($this->usuarioModel->existeCorreo($correo)) {
             return false;
         }

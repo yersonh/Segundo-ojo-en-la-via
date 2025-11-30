@@ -1,6 +1,5 @@
 <?php
-// LO PRIMERO EN EL ARCHIVO - Sin espacios/blancos antes!
-ob_start(); // Capturar cualquier output accidental
+ob_start();
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -16,12 +15,10 @@ try {
 
     switch ($action) {
 
-        // Listar los reportes
         case 'listar':
             try {
                 error_log("📋 Ejecutando acción: listar reportes");
 
-                // 🎯 CONSULTA CORREGIDA CON MANEJO DE ERRORES
                 $query = "
                     SELECT
                         r.id_reporte,
@@ -54,7 +51,6 @@ try {
 
                 error_log("📊 Reportes encontrados: " . count($reportes));
 
-                // Obtener TODAS las imágenes para cada reporte
                 foreach ($reportes as &$reporte) {
                     $queryImg = "SELECT url_imagen FROM imagen_reporte WHERE id_reporte = :id_reporte ORDER BY id_imagen";
                     $stmtImg = $db->prepare($queryImg);
@@ -65,7 +61,6 @@ try {
                 }
                 unset($reporte);
 
-                // Limpiar output accidental
                 $unexpected_output = ob_get_contents();
                 if (!empty($unexpected_output)) {
                     error_log("⚠️ Output inesperado en listar: " . $unexpected_output);
@@ -93,26 +88,21 @@ try {
             break;
 
         case 'registrar':
-            // Si viene con formulario (multipart/form-data)
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // Sanitizar y validar datos (tu código igual)
                 $id_usuario = filter_var($_POST['id_usuario'], FILTER_VALIDATE_INT);
                 $id_tipo_incidente = filter_var($_POST['id_tipo_incidente'], FILTER_VALIDATE_INT);
                 $descripcion = filter_var($_POST['descripcion'], FILTER_SANITIZE_STRING);
                 $latitud = filter_var($_POST['latitud'], FILTER_VALIDATE_FLOAT);
                 $longitud = filter_var($_POST['longitud'], FILTER_VALIDATE_FLOAT);
 
-                // Validar datos requeridos (tu código igual)
                 if (empty($id_usuario) || empty($id_tipo_incidente) || empty($descripcion) || empty($latitud) || empty($longitud)) {
                     throw new Exception("Todos los campos son obligatorios");
                 }
 
-                // Validar coordenadas (tu código igual)
                 if ($latitud < -90 || $latitud > 90 || $longitud < -180 || $longitud > 180) {
                     throw new Exception("Coordenadas no válidas");
                 }
 
-                // Validar que el usuario existe (tu código igual)
                 $queryUser = "SELECT id_usuario FROM usuario WHERE id_usuario = :id_usuario";
                 $stmtUser = $db->prepare($queryUser);
                 $stmtUser->execute([':id_usuario' => $id_usuario]);
@@ -121,11 +111,9 @@ try {
                     throw new Exception("Usuario no válido");
                 }
 
-                // Iniciar transacción
                 $db->beginTransaction();
 
                 try {
-                    // Insertar reporte (tu código igual)
                     $query = "
                         INSERT INTO reporte (id_usuario, id_tipo_incidente, descripcion, latitud, longitud)
                         VALUES (:id_usuario, :id_tipo_incidente, :descripcion, :latitud, :longitud)
@@ -141,8 +129,6 @@ try {
 
                     $id_reporte = $db->lastInsertId();
                     error_log("✅ Reporte insertado con ID: " . $id_reporte);
-
-                    // 🆕 CORREGIDO: OBTENER INFORMACIÓN PARA LA NOTIFICACIÓN
                     $queryInfo = "
                         SELECT
                             r.descripcion,
@@ -160,7 +146,6 @@ try {
                     $stmtInfo->execute([':id_reporte' => $id_reporte]);
                     $infoReporte = $stmtInfo->fetch(PDO::FETCH_ASSOC);
 
-                    // 🆕 CORREGIDO: CREAR NOTIFICACIÓN PARA SSE
                     if ($infoReporte) {
                         $nombreCompleto = trim($infoReporte['nombres'] . ' ' . $infoReporte['apellidos']);
                         $mensajeCorto = strlen($infoReporte['descripcion']) > 50
@@ -175,11 +160,9 @@ try {
                             'timestamp' => time()
                         ];
 
-                        // Guardar en archivo temporal para SSE
                         $archivoNotificacion = $_SERVER['DOCUMENT_ROOT'] . '/temp/ultima_notificacion.json';
                         $tempDir = dirname($archivoNotificacion);
 
-                        // Crear directorio si no existe
                         if (!is_dir($tempDir)) {
                             mkdir($tempDir, 0755, true);
                         }
@@ -191,17 +174,14 @@ try {
                         }
                     }
 
-                    // 🆕 CORRECCIÓN COMPLETA: Manejo de MÚLTIPLES IMÁGENES
                     $imagenes_subidas = 0;
                     $urls_imagenes = [];
 
-                    // Verificar si hay imágenes (con soporte para múltiples)
                     if (!empty($_FILES['imagen']['name'][0])) {
                         error_log("📸 Procesando " . count($_FILES['imagen']['name']) . " imágenes...");
 
                         $directorio = $_SERVER['DOCUMENT_ROOT'] . '/imagenes/reportes/';
 
-                        // Crear directorio si no existe
                         if (!is_dir($directorio)) {
                             if (!mkdir($directorio, 0755, true)) {
                                 throw new Exception("No se pudo crear el directorio para imágenes");
@@ -209,17 +189,15 @@ try {
                             error_log("📁 Directorio creado: " . $directorio);
                         }
 
-                        // Procesar cada imagen
                         for ($i = 0; $i < count($_FILES['imagen']['name']); $i++) {
                             // Verificar que no hay error en este archivo específico
                             if ($_FILES['imagen']['error'][$i] !== UPLOAD_ERR_OK) {
                                 if ($_FILES['imagen']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
                                     error_log("⚠️ Error en archivo $i: " . $_FILES['imagen']['error'][$i]);
                                 }
-                                continue; // Saltar este archivo pero continuar con los demás
+                                continue;
                             }
 
-                            // ✅ Validación de tipo de archivo (CON ÍNDICE [$i])
                             $finfo = finfo_open(FILEINFO_MIME_TYPE);
                             $mime_type = finfo_file($finfo, $_FILES['imagen']['tmp_name'][$i]); // ← CORREGIDO
                             finfo_close($finfo);
@@ -228,47 +206,39 @@ try {
 
                             if (!in_array($mime_type, $allowed_types)) {
                                 error_log("❌ Tipo de archivo no permitido: " . $mime_type);
-                                continue; // Saltar este archivo pero continuar
+                                continue;
                             }
 
-                            // ✅ Validar que sea una imagen real (CON ÍNDICE [$i])
                             $image_info = getimagesize($_FILES['imagen']['tmp_name'][$i]); // ← CORREGIDO
                             if (!$image_info) {
                                 error_log("❌ Archivo no es imagen válida: " . $_FILES['imagen']['name'][$i]);
                                 continue;
                             }
 
-                            // Validar tamaño (máximo 5MB) (CON ÍNDICE [$i])
                             if ($_FILES['imagen']['size'][$i] > 5 * 1024 * 1024) { // ← CORREGIDO
                                 error_log("❌ Imagen muy grande: " . $_FILES['imagen']['name'][$i]);
                                 continue;
                             }
 
-                            // Generar nombre seguro (CON ÍNDICE [$i])
                             $extension = pathinfo($_FILES['imagen']['name'][$i], PATHINFO_EXTENSION); // ← CORREGIDO
                             $nombreArchivo = uniqid('reporte_') . '.' . $extension;
 
-                            // Ruta para guardar en servidor
                             $rutaDestino = $directorio . $nombreArchivo;
 
-                            // 🆕 SOLUCIÓN: Crear URL absoluta CON HTTPS FORZADO EN PRODUCCIÓN
                             $host = $_SERVER['HTTP_HOST'];
-                            // Si es localhost, usar HTTP; si es producción, forzar HTTPS
                             if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
                                 $protocol = 'http';
                             } else {
-                                $protocol = 'https'; // ← FORZAR HTTPS EN PRODUCCIÓN
+                                $protocol = 'https';
                             }
                             $urlImagen = $protocol . '://' . $host . '/imagenes/reportes/' . $nombreArchivo;
 
                             error_log("🖼️ Procesando imagen $i: " . $_FILES['imagen']['name'][$i] . " -> " . $rutaDestino);
                             error_log("🔒 URL generada: " . $urlImagen . " (Protocolo: " . $protocol . ")");
 
-                            // Mover archivo (CON ÍNDICE [$i])
                             if (move_uploaded_file($_FILES['imagen']['tmp_name'][$i], $rutaDestino)) { // ← CORREGIDO
                                 error_log("✅ Imagen $i guardada físicamente");
 
-                                // Verificar que el archivo existe
                                 if (file_exists($rutaDestino)) {
                                     // Insertar en base de datos
                                     $queryImg = "INSERT INTO imagen_reporte (id_reporte, url_imagen) VALUES (:id_reporte, :url_imagen)";
@@ -284,7 +254,7 @@ try {
                                         error_log("✅ Imagen $i insertada en BD: " . $urlImagen);
                                     } else {
                                         error_log("❌ Error al insertar imagen $i en BD");
-                                        unlink($rutaDestino); // Limpiar archivo físico
+                                        unlink($rutaDestino);
                                     }
                                 } else {
                                     error_log("❌ Archivo no encontrado después de mover: " . $rutaDestino);
@@ -298,10 +268,8 @@ try {
                         error_log("📸 No se recibieron imágenes o array vacío");
                     }
 
-                    // Confirmar transacción
                     $db->commit();
 
-                    // Limpiar output accidental
                     $unexpected_output = ob_get_contents();
                     if (!empty($unexpected_output)) {
                         error_log("⚠️ Output inesperado: " . $unexpected_output);
@@ -331,8 +299,6 @@ try {
             }
             break;
 
-        // ✅ COMENTARIOS - CASOS CORREGIDOS
-
         case 'listar_comentarios':
             $id_reporte = $_GET['id_reporte'] ?? '';
             if (empty($id_reporte)) {
@@ -357,7 +323,6 @@ try {
             $stmt->execute([':id_reporte' => $id_reporte]);
             $comentarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Verificar output accidental
             $unexpected_output = ob_get_contents();
             if (!empty($unexpected_output)) {
                 error_log("⚠️ Output inesperado en listar_comentarios: " . $unexpected_output);
@@ -377,7 +342,6 @@ try {
                     throw new Exception("Todos los campos son obligatorios");
                 }
 
-                // Verificar que el reporte existe
                 $queryCheck = "SELECT id_reporte FROM reporte WHERE id_reporte = :id_reporte";
                 $stmtCheck = $db->prepare($queryCheck);
                 $stmtCheck->execute([':id_reporte' => $id_reporte]);
@@ -395,7 +359,6 @@ try {
                     ':comentario' => $comentario
                 ]);
 
-                // Verificar output accidental
                 $unexpected_output = ob_get_contents();
                 if (!empty($unexpected_output)) {
                     error_log("⚠️ Output inesperado en agregar_comentario: " . $unexpected_output);
@@ -409,15 +372,13 @@ try {
                 ]);
             }
             break;
-
-        // ✅ CORREGIDO: contar_comentarios
         case 'contar_comentarios':
             if (isset($_GET['id_reporte'])) {
                 $id_reporte = $_GET['id_reporte'];
 
                 try {
                     $sql = "SELECT COUNT(*) as total_comentarios FROM comentario_reporte WHERE id_reporte = ?";
-                    $stmt = $db->prepare($sql); // ✅ CORREGIDO: $db en lugar de $this->conn
+                    $stmt = $db->prepare($sql);
                     $stmt->execute([$id_reporte]);
                     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -435,7 +396,6 @@ try {
                 } catch (PDOException $e) {
                     error_log("Error contando comentarios: " . $e->getMessage());
 
-                    // Limpiar output accidental
                     $unexpected_output = ob_get_contents();
                     if (!empty($unexpected_output)) {
                         ob_clean();
@@ -452,14 +412,13 @@ try {
             }
             break;
 
-        // ✅ CORREGIDO: obtener_propietario
         case 'obtener_propietario':
             if (isset($_GET['id_reporte'])) {
                 $id_reporte = $_GET['id_reporte'];
 
                 try {
                     $sql = "SELECT id_usuario as id_usuario_destino FROM reporte WHERE id_reporte = ?";
-                    $stmt = $db->prepare($sql); // ✅ CORREGIDO: $db en lugar de $this->conn
+                    $stmt = $db->prepare($sql);
                     $stmt->execute([$id_reporte]);
                     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -485,7 +444,6 @@ try {
                 } catch (PDOException $e) {
                     error_log("Error obteniendo propietario: " . $e->getMessage());
 
-                    // Limpiar output accidental
                     $unexpected_output = ob_get_contents();
                     if (!empty($unexpected_output)) {
                         ob_clean();
@@ -499,17 +457,14 @@ try {
             }
             break;
 
-        // Acción de diagnóstico para verificar imágenes
         case 'diagnostico_imagenes':
             $directorio = $_SERVER['DOCUMENT_ROOT'] . '/imagenes/reportes/';
             $archivos = is_dir($directorio) ? array_diff(scandir($directorio), ['.', '..']) : ['Directorio no existe'];
 
-            // Verificar últimas imágenes en BD
             $query = "SELECT * FROM imagen_reporte ORDER BY id_imagen DESC LIMIT 5";
             $stmt = $db->query($query);
             $ultimas_imagenes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Verificar permisos
             $permisos = is_dir($directorio) ? substr(sprintf('%o', fileperms($directorio)), -4) : 'No existe';
 
             echo json_encode([
@@ -522,7 +477,6 @@ try {
             ]);
             break;
 
-        // ✅ LIKES - CASOS EXISTENTES (sin cambios)
         case 'toggle_like':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_reporte = $_POST['id_reporte'];
@@ -532,29 +486,25 @@ try {
                     throw new Exception("Datos incompletos");
                 }
 
-                // Verificar si ya existe el like
                 $queryCheck = "SELECT id_like FROM like_reporte WHERE id_reporte = :id_reporte AND id_usuario = :id_usuario";
                 $stmtCheck = $db->prepare($queryCheck);
                 $stmtCheck->execute([':id_reporte' => $id_reporte, ':id_usuario' => $id_usuario]);
                 $existingLike = $stmtCheck->fetch();
 
                 if ($existingLike) {
-                    // Quitar like
+
                     $queryDelete = "DELETE FROM like_reporte WHERE id_like = :id_like";
                     $stmtDelete = $db->prepare($queryDelete);
                     $stmtDelete->execute([':id_like' => $existingLike['id_like']]);
 
-                    // Crear notificación de like eliminado (opcional)
                     crearNotificacion($db, $id_usuario, null, $id_reporte, 'like_remove', 'Ya no le gusta tu reporte');
 
                     echo json_encode(["success" => true, "action" => "unliked"]);
                 } else {
-                    // Agregar like
                     $queryInsert = "INSERT INTO like_reporte (id_reporte, id_usuario) VALUES (:id_reporte, :id_usuario)";
                     $stmtInsert = $db->prepare($queryInsert);
                     $stmtInsert->execute([':id_reporte' => $id_reporte, ':id_usuario' => $id_usuario]);
 
-                    // Obtener información para la notificación
                     $reporteInfo = obtenerInfoReporte($db, $id_reporte);
                     if ($reporteInfo && $reporteInfo['id_usuario'] != $id_usuario) {
                         $mensaje = "Le gusta tu reporte: " . (strlen($reporteInfo['descripcion']) > 50 ?
@@ -600,7 +550,6 @@ try {
             break;
 
         default:
-            // Verificar output accidental
             $unexpected_output = ob_get_contents();
             if (!empty($unexpected_output)) {
                 error_log("⚠️ Output inesperado en default: " . $unexpected_output);
@@ -611,7 +560,6 @@ try {
             break;
     }
 } catch (Exception $e) {
-    // Verificar output accidental antes del error
     $unexpected_output = ob_get_contents();
     if (!empty($unexpected_output)) {
         error_log("⚠️ Output inesperado en catch: " . $unexpected_output);
@@ -626,9 +574,6 @@ try {
     ]);
 }
 
-// ✅ FUNCIONES AUXILIARES
-
-// Función para obtener información del reporte
 function obtenerInfoReporte($db, $id_reporte) {
     $query = "SELECT r.id_usuario, r.descripcion, u.correo, p.nombres, p.apellidos
             FROM reporte r
@@ -640,7 +585,6 @@ function obtenerInfoReporte($db, $id_reporte) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// Función para crear notificaciones
 function crearNotificacion($db, $id_usuario_destino, $id_usuario_origen, $id_reporte, $tipo, $mensaje) {
     $query = "INSERT INTO notificacion (id_usuario_destino, id_usuario_origen, id_reporte, tipo, mensaje)
             VALUES (:destino, :origen, :reporte, :tipo, :mensaje)";
@@ -655,6 +599,5 @@ function crearNotificacion($db, $id_usuario_destino, $id_usuario_origen, $id_rep
     return $db->lastInsertId();
 }
 
-// Finalizar el buffer sin limpiar (ya limpiamos solo lo accidental)
 ob_end_flush();
 ?>

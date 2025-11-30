@@ -20,12 +20,12 @@ export class GeolocationManager {
 
     _agregarControlGeolocalizacion() {
         const self = this; // Guardar referencia para usar en los callbacks
-        
+
         const LocateControl = L.Control.extend({
             options: {
                 position: 'bottomright'
             },
-            
+
             onAdd: function(map) {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 container.classList.add('geolocation-btn');
@@ -39,37 +39,37 @@ export class GeolocationManager {
                     'transition: all 0.3s ease;">' +
                     '<span style="display: inline-block; transition: transform 0.3s ease;">📍</span>' +
                     '</a>';
-                
+
                 const link = container.querySelector('a');
-                
+
                 // Prevenir eventos del mapa
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(container, 'click', L.DomEvent.stop);
-                
+
                 // Efecto hover
                 link.addEventListener('mouseenter', function() {
                     this.style.background = '#f8f9fa';
                     this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
                     this.querySelector('span').style.transform = 'scale(1.1)';
                 });
-                
+
                 link.addEventListener('mouseleave', function() {
                     this.style.background = 'white';
                     this.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
                     this.querySelector('span').style.transform = 'scale(1)';
                 });
-                
+
                 // Evento click
                 L.DomEvent.on(container, 'click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     self._obtenerUbicacionUsuario(link);
                 });
-                
+
                 return container;
             }
         });
-        
+
         new LocateControl().addTo(this.mapa.getMap());
         this.controlAdded = true;
         console.log('✅ Control de geolocalización agregado');
@@ -77,18 +77,18 @@ export class GeolocationManager {
 
     async _obtenerUbicacionUsuario(link) {
         console.log('📍 Buscando ubicación...');
-        
+
         if (!navigator.geolocation) {
             this._mostrarErrorGeolocalizacion('Tu navegador no soporta geolocalización');
             return;
         }
-        
+
         // Mostrar loading
         const originalHTML = link.innerHTML;
         link.innerHTML = '<div style="width: 20px; height: 20px; margin: 0 auto; border: 2px solid #f3f3f3; border-top: 2px solid #4285f4; border-radius: 50%; animation: spin 1s linear infinite;"></div>';
         link.style.background = '#f8f9fa';
         link.style.pointerEvents = 'none';
-        
+
         try {
             const position = await this._getCurrentPosition();
             this._manejarUbicacionExitosa(position, link, originalHTML);
@@ -105,18 +105,18 @@ export class GeolocationManager {
 
     _manejarUbicacionExitosa(position, link, originalHTML) {
         console.log('✅ Ubicación encontrada:', position.coords);
-        
+
         const latlng = [
-            position.coords.latitude, 
+            position.coords.latitude,
             position.coords.longitude
         ];
-        
+
         // Centrar mapa en la ubicación
         this.mapa.getMap().flyTo(latlng, 16, {
             duration: 1.5,
             easeLinearity: 0.25
         });
-        
+
         this._agregarMarcadorUbicacion(latlng, position.coords.accuracy);
         this._restaurarBoton(link, originalHTML, true);
     }
@@ -124,13 +124,13 @@ export class GeolocationManager {
     _agregarMarcadorUbicacion(latlng, accuracy) {
         // Remover marcadores anteriores
         this._limpiarMarcadores();
-        
+
         // Crear marcador estilo Google Maps
         this.locationMarker = L.marker(latlng, {
             icon: this._crearIconoUbicacion(),
             zIndexOffset: 1000
         }).addTo(this.mapa.getMap());
-        
+
         // Círculo de precisión
         if (accuracy) {
             this.accuracyCircle = L.circle(latlng, {
@@ -142,7 +142,7 @@ export class GeolocationManager {
                 opacity: 0.6
             }).addTo(this.mapa.getMap());
         }
-        
+
         // Popup informativo
         this.locationMarker.bindPopup(this._crearPopupUbicacion(latlng, accuracy)).openPopup();
     }
@@ -203,7 +203,7 @@ export class GeolocationManager {
 
     _manejarErrorGeolocalizacion(error, link, originalHTML) {
         console.error('❌ Error de geolocalización:', error);
-        
+
         let mensaje = 'No se pudo obtener la ubicación';
         switch(error.code) {
             case error.PERMISSION_DENIED:
@@ -216,7 +216,7 @@ export class GeolocationManager {
                 mensaje = 'Tiempo de espera agotado. Intenta nuevamente.';
                 break;
         }
-        
+
         this._mostrarErrorGeolocalizacion(mensaje);
         this._restaurarBoton(link, originalHTML, false);
     }
@@ -242,7 +242,7 @@ export class GeolocationManager {
             link.innerHTML = originalHTML;
             link.style.background = 'white';
             link.style.pointerEvents = 'auto';
-            
+
             // Efecto de éxito o error
             link.style.background = exito ? '#34a853' : '#ea4335';
             link.style.color = 'white';
@@ -258,7 +258,7 @@ export class GeolocationManager {
             this.mapa.getMap().removeLayer(this.locationMarker);
             this.locationMarker = null;
         }
-        
+
         if (this.accuracyCircle) {
             this.mapa.getMap().removeLayer(this.accuracyCircle);
             this.accuracyCircle = null;

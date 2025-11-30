@@ -1,4 +1,3 @@
-<!-- admin-usuarios.php -->
 <div class="section">
     <div class="section-header">
         <h3><i class="fas fa-users"></i> Gestión de Usuarios</h3>

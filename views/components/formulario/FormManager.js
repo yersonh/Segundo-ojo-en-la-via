@@ -10,31 +10,30 @@ export class FormManager {
         this.uiManager = new UIManager(this);
         this.imageManager = new ImageManager(this);
         this.cameraManager = new CameraManager(this, this.imageManager);
-        
+
         this.initialized = false;
     }
 
     initialize() {
         if (this.initialized) return;
-        
+
         console.log('⚙️ Inicializando FormManager...');
-        
+
         // Inicializar todos los managers
         this.uiManager.initialize();
         this.validationManager.initialize();
         this.imageManager.initialize();
         this.cameraManager.initialize();
-        
+
         this.setupFormSubmit();
         this.validationManager.setupCharacterCounter();
-        
-        // REGISTRARSE PARA CAMBIOS DE CONEXIÓN (SOLO UNA VEZ)
+
         if (window.connectionManager) {
             window.connectionManager.addListener((online) => {
                 this.handleConnectionChange(online);
             });
         }
-        
+
         this.initialized = true;
         console.log('✅ FormManager inicializado correctamente');
     }
@@ -51,7 +50,6 @@ export class FormManager {
     async handleFormSubmit(e) {
         e.preventDefault();
 
-        // Validación básica del formulario
         if (!this.validationManager.validateForm()) {
             console.log('❌ Validación de formulario falló');
             return;
@@ -67,10 +65,9 @@ export class FormManager {
 
         try {
             console.log('📤 Enviando formulario...');
-            
+
             const formData = new FormData(e.target);
-            
-            // ✅ CORREGIDO: Usar el endpoint correcto que SÍ existe
+
             const resp = await fetch('../../controllers/reportecontrolador.php?action=registrar', {
                 method: 'POST',
                 body: formData
@@ -86,7 +83,7 @@ export class FormManager {
                 console.error('❌ Error parseando respuesta:', parseError);
                 throw new Error('Respuesta del servidor no válida');
             }
-            
+
             if (result.success) {
 
                 this.handleSubmitSuccess(result.mensaje);
@@ -97,12 +94,11 @@ export class FormManager {
 
         } catch (error) {
             console.error('💥 Error en envío:', error);
-            
-            // ✅ MEJORADO: DETECCIÓN INTELIGENTE DE OFFLINE
+
             const isOffline = !window.connectionManager || !window.connectionManager.getStatus();
-            const isNetworkError = error.message.includes('Failed to fetch') || 
+            const isNetworkError = error.message.includes('Failed to fetch') ||
                                 error.message.includes('NetworkError');
-            
+
             if (isOffline || isNetworkError) {
                 // Estamos offline, guardar localmente
                 const timestamp = new Date().getTime();
@@ -114,70 +110,63 @@ export class FormManager {
             this.uiManager.hideLoadingState();
         }
     }
-
-    // ✅ NUEVO: MÉTODO PARA ENVIAR NOTIFICACIÓN A ADMINS
-    
-
-    // ✅ MANTENIDO: Mejor verificación de coordenadas
     verificarCoordenadas() {
         const latInput = document.getElementById('latitud');
         const lngInput = document.getElementById('longitud');
-        
+
         if (!latInput || !lngInput) {
             console.error('❌ No se encontraron inputs de coordenadas');
             return false;
         }
-        
+
         const lat = latInput.value;
         const lng = lngInput.value;
-        
+
         if (!lat || !lng || lat === '' || lng === '') {
             console.error('❌ Coordenadas vacías:', { lat, lng });
             return false;
         }
-        
+
         if (lat === 'No seleccionada' || lng === 'No seleccionada') {
             console.error('❌ Coordenadas no seleccionadas');
             return false;
         }
-        
+
         console.log('✅ Coordenadas válidas:', lat, lng);
         return true;
     }
 
-    // ✅ MANTENIDO: MANEJADOR DE ÉXITO OFFLINE MEJORADO
     handleSubmitOfflineSuccess(idOffline) {
         const mensaje = `✅ Reporte guardado localmente (ID: ${idOffline}). Se enviará automáticamente cuando recuperes conexión.`;
-        
+
         console.log('💾 Reporte offline guardado exitosamente');
 
         this.showAlert(mensaje, 'success');
-        
+
         // Agregar marker al mapa
         this.agregarMarkerOfflineAlMapa(idOffline);
-        
+
         // Limpiar formulario
         setTimeout(() => {
             this.clearForm();
         }, 2000);
     }
 
-    // ✅ MANTENIDO: MÉTODO PARA AGREGAR MARKER OFFLINE
     async agregarMarkerOfflineAlMapa(idOffline) {
         if (!window.mapaSistema || !window.mapaSistema.markerManager) {
             console.log('❌ No se puede agregar marker - mapa o markerManager no disponible');
             return;
         }
-        
+
         try {
             console.log('📍 Intentando agregar marker offline al mapa:', idOffline);
-            
+
             // Agregar marker con datos actuales del formulario
             const lat = document.getElementById('latitud').value;
             const lng = document.getElementById('longitud').value;
             const tipo = document.getElementById('tipo');
             const descripcion = document.getElementById('descripcion').value;
-            
+
             if (lat && lng) {
                 window.mapaSistema.markerManager.agregarMarkerOffline({
                     id: idOffline,
@@ -187,10 +176,10 @@ export class FormManager {
                     descripcion: descripcion,
                     fecha: new Date().toISOString()
                 });
-                
+
                 console.log('✅ Marker offline agregado al mapa');
             }
-            
+
         } catch (error) {
             console.error('❌ Error agregando marker offline:', error);
         }
@@ -209,25 +198,24 @@ export class FormManager {
         this.uiManager.showErrorAnimation();
     }
 
-    // ✅ MANTENIDO: ClearForm mejorado
     clearForm() {
         const form = document.querySelector(FormConstants.SELECTORS.FORM);
         if (form) form.reset();
-        
+
         this.imageManager.clearImages();
-        
+
         const latDisplay = document.querySelector(FormConstants.SELECTORS.LAT_DISPLAY);
         const lngDisplay = document.querySelector(FormConstants.SELECTORS.LNG_DISPLAY);
-        
+
         if (latDisplay) latDisplay.textContent = 'No seleccionada';
         if (lngDisplay) lngDisplay.textContent = 'No seleccionada';
-        
+
         document.getElementById('latitud').value = '';
         document.getElementById('longitud').value = '';
-        
+
         this.validationManager.clearAllErrors();
         this.cameraManager.deactivateCamera();
-        
+
         console.log('🧹 Formulario limpiado');
     }
 
@@ -243,7 +231,6 @@ export class FormManager {
         }
     }
 
-    // ✅ MEJORADO: Usar UIManager para alertas
     showAlert(message, type = 'success') {
         this.uiManager.showAlert(message, type);
     }
@@ -252,14 +239,13 @@ export class FormManager {
         this.uiManager.updateCoordinates(lat, lng);
     }
 
-    // ✅ MANTENIDO: MÉTODO ÚNICO MEJORADO PARA CAMBIOS DE CONEXIÓN
     handleConnectionChange(online) {
         if (online) {
             this.updateOnlineUI();
         } else {
             this.updateOfflineUI();
         }
-        
+
         const searchBtn = document.getElementById('btnBuscar');
         if (searchBtn) {
             searchBtn.disabled = !online;
@@ -271,8 +257,7 @@ export class FormManager {
                 searchBtn.title = '';
             }
         }
-        
-        // Aplicar clase CSS para modo offline
+
         const panel = document.getElementById('panel');
         if (panel) {
             if (!online) {
@@ -283,7 +268,6 @@ export class FormManager {
         }
     }
 
-    // ✅ MANTENIDO: INTERFAZ OFFLINE MEJORADA
     updateOfflineUI() {
         const submitBtn = document.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -294,7 +278,6 @@ export class FormManager {
         }
     }
 
-    // ✅ MANTENIDO: INTERFAZ ONLINE MEJORADA
     updateOnlineUI() {
         const submitBtn = document.querySelector('button[type="submit"]');
         if (submitBtn) {

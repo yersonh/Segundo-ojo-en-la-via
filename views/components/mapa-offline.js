@@ -127,15 +127,14 @@ const MapaOfflineManager = {
         return canvas.toDataURL();
     },
 
-    // Precargar tiles esenciales de Villavicencio
     async precargarTilesEsenciales() {
         if (!this.tileCache || !navigator.onLine) {
-            console.log('⏸️ Precarga omitida - Sin cache o sin conexión');
+            console.log('⏸Precarga omitida - Sin cache o sin conexión');
             return;
         }
 
         const zooms = [12, 13, 14, 15, 16]; // Zooms más usados en Villavicencio
-        console.log('🗺️ Precargando tiles esenciales de Villavicencio...');
+        console.log('Precargando tiles esenciales de Villavicencio...');
 
         let totalTiles = 0;
         let tilesCargados = 0;
@@ -144,7 +143,6 @@ const MapaOfflineManager = {
             const tiles = this.calcularTilesVillavicencio(z);
             totalTiles += tiles.length;
 
-            // Precargar en lotes para no bloquear el navegador
             const batchSize = 5;
             for (let i = 0; i < tiles.length; i += batchSize) {
                 const batch = tiles.slice(i, i + batchSize);
@@ -153,21 +151,18 @@ const MapaOfflineManager = {
                 );
                 tilesCargados += batch.length;
 
-                // Actualizar progreso cada lote
                 const progreso = Math.round((tilesCargados / totalTiles) * 100);
                 if (progreso % 20 === 0) {
                     console.log(`📦 Precarga: ${progreso}% (${tilesCargados}/${totalTiles} tiles)`);
                 }
 
-                // Pequeña pausa entre lotes
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
 
-        console.log(`✅ Precarga completada: ${tilesCargados} tiles cacheados`);
+        console.log(`Precarga completada: ${tilesCargados} tiles cacheados`);
     },
 
-    // Calcular tiles necesarios para Villavicencio
     calcularTilesVillavicencio(zoom) {
         const tiles = [];
         const bounds = this.areaVillavicencio;
@@ -175,7 +170,6 @@ const MapaOfflineManager = {
         const topLeft = this.latLngToTile(bounds.north, bounds.west, zoom);
         const bottomRight = this.latLngToTile(bounds.south, bounds.east, zoom);
 
-        // Agregar margen de 2 tiles alrededor
         const startX = Math.max(0, topLeft.x - 2);
         const endX = bottomRight.x + 2;
         const startY = Math.max(0, topLeft.y - 2);
@@ -191,11 +185,10 @@ const MapaOfflineManager = {
             }
         }
 
-        console.log(`📐 Zoom ${zoom}: ${tiles.length} tiles para Villavicencio`);
+        console.log(`Zoom ${zoom}: ${tiles.length} tiles para Villavicencio`);
         return tiles;
     },
 
-    // Convertir lat/lng a coordenadas de tile
     latLngToTile(lat, lng, zoom) {
         const latRad = lat * Math.PI / 180;
         const n = Math.pow(2, zoom);
@@ -204,7 +197,6 @@ const MapaOfflineManager = {
         return { x, y };
     },
 
-    // Cachear un tile específico
     async cacheTile(x, y, z) {
         const tileUrl = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
 
@@ -222,13 +214,11 @@ const MapaOfflineManager = {
                 return 'cached';
             }
         } catch (error) {
-            // Error silencioso - el tile puede no existir o no estar disponible
         }
 
         return 'error';
     },
 
-    // Obtener estadísticas del cache
     async obtenerEstadísticasCache() {
         if (!this.tileCache) {
             return { total: 0, tamaño: '0 KB' };
@@ -257,7 +247,6 @@ const MapaOfflineManager = {
         }
     },
 
-    // Formatear tamaño en bytes a texto legible
     formatearTamaño(bytes) {
         const unidades = ['B', 'KB', 'MB', 'GB'];
         let tamaño = bytes;
@@ -271,7 +260,6 @@ const MapaOfflineManager = {
         return `${tamaño.toFixed(1)} ${unidades[unidadIndex]}`;
     },
 
-    // Limpiar cache (útil para desarrollo)
     async limpiarCache() {
         if (this.tileCache) {
             const keys = await this.tileCache.keys();
@@ -282,7 +270,6 @@ const MapaOfflineManager = {
         }
     },
 
-    // Verificar si un tile específico está cacheado
     async estaTileCacheado(x, y, z) {
         if (!this.tileCache) return false;
 
@@ -292,11 +279,9 @@ const MapaOfflineManager = {
     }
 };
 
-// 🆕 INTEGRACIÓN CON EL SISTEMA OFFLINE EXISTENTE
-// Escuchar eventos de conexión para gestión automática
 if (typeof window !== 'undefined') {
     window.addEventListener('online', () => {
-        console.log('🌐 Conexión restaurada - Verificando precarga de tiles...');
+        console.log('Conexión restaurada - Verificando precarga de tiles...');
         // Precargar tiles cuando se recupera la conexión
         setTimeout(() => {
             MapaOfflineManager.precargarTilesEsenciales();
@@ -304,11 +289,10 @@ if (typeof window !== 'undefined') {
     });
 
     window.addEventListener('offline', () => {
-        console.log('📡 Sin conexión - Usando tiles cacheados');
+        console.log('Sin conexión - Usando tiles cacheados');
     });
 }
 
-// 🆕 FUNCIONES DE DEBUG (opcionales para desarrollo)
 MapaOfflineManager.debug = {
     async mostrarEstadísticas() {
         const stats = await MapaOfflineManager.obtenerEstadísticasCache();
@@ -323,7 +307,7 @@ MapaOfflineManager.debug = {
     },
 
     async forzarPrecarga() {
-        console.log('🔄 Forzando precarga de tiles...');
+        console.log('Forzando precarga de tiles...');
         await MapaOfflineManager.precargarTilesEsenciales();
     }
 };

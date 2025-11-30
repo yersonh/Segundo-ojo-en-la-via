@@ -1,5 +1,4 @@
 <?php
-// esto envia el gmail
 require_once __DIR__ . '/database.php';
 require __DIR__ . '/../phpmailer/PHPMailer.php';
 require __DIR__ . '/../phpmailer/SMTP.php';

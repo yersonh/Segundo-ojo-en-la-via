@@ -1,5 +1,4 @@
 <?php
-// HEADERS PRIMERO - Sin output antes
 header('Content-Type: text/event-stream; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');

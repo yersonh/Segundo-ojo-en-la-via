@@ -1,4 +1,3 @@
-// Punto de entrada principal para el sistema de mapas
 import { MapaManager } from './MapaManager.js';
 import { MarkerManager } from './MarkerManager.js';
 import { GeolocationManager } from './GeolocationManager.js';
@@ -22,34 +21,34 @@ export class SistemaMapa {
         this.geolocationManager = new GeolocationManager(this.mapaManager);
         this.popupManager = new PopupManager();
         this.galleryManager = new GalleryManager();
-        
+
         this._configurarIntegraciones();
     }
-    
+
     _configurarIntegraciones() {
         // Conectar managers entre sí
         this.markerManager.setPopupManager(this.popupManager);
         this.popupManager.setGalleryManager(this.galleryManager);
-        
+
         // Registrar managers en el mapa principal
         this.mapaManager.setManager('markers', this.markerManager);
         this.mapaManager.setManager('geolocation', this.geolocationManager);
         this.mapaManager.setManager('popups', this.popupManager);
         this.mapaManager.setManager('gallery', this.galleryManager);
     }
-    
+
     async inicializar(containerId = 'map') {
         try {
             console.log('🚀 Inicializando sistema de mapas...');
-            
+
             // Inicializar en orden
             this.mapaManager.inicializar(containerId);
             this.markerManager.inicializar();
             this.geolocationManager.inicializar();
-            
+
             // Cargar datos iniciales
             await this.markerManager.cargarReportes();
-            
+
             console.log('🎉 Sistema de mapas completamente inicializado');
             return this;
         } catch (error) {
@@ -57,32 +56,32 @@ export class SistemaMapa {
             throw error;
         }
     }
-    
+
     // Métodos de conveniencia para acceso rápido
     getMap() {
         return this.mapaManager.getMap();
     }
-    
+
     getManager(nombre) {
         return this.mapaManager.getManager(nombre);
     }
-    
+
     async recargarReportes() {
         return await this.markerManager.cargarReportes();
     }
-    
+
     mostrarUbicacionUsuario() {
         return this.geolocationManager.obtenerUbicacionActual();
     }
-    
+
     seleccionarUbicacion(latlng) {
         return this.mapaManager.seleccionarUbicacion(latlng);
     }
-    
+
     mostrarGaleria(idReporte, indiceInicial = 0) {
         return this.galleryManager.mostrarGaleria(idReporte, indiceInicial);
     }
-    
+
     destruir() {
         this.mapaManager.destruir();
         this.geolocationManager.limpiar();

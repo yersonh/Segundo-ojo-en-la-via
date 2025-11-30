@@ -100,24 +100,23 @@ class AdminMapManager {
         const mapContainer = document.getElementById('adminMap');
 
         if (!mapContainer) {
-            console.log('❌ Contenedor adminMap no encontrado en el DOM');
+            console.log('Contenedor adminMap no encontrado en el DOM');
             return false;
         }
 
-        // Verificar que el contenedor sea visible y tenga dimensiones
         const style = window.getComputedStyle(mapContainer);
         const isVisible = style.display !== 'none' &&
-                         style.visibility !== 'hidden' &&
-                         mapContainer.offsetParent !== null;
+                            style.visibility !== 'hidden' &&
+                            mapContainer.offsetParent !== null;
 
         const hasDimensions = mapContainer.offsetWidth > 0 && mapContainer.offsetHeight > 0;
 
         if (!isVisible || !hasDimensions) {
-            console.log('❌ Contenedor adminMap no visible o sin dimensiones');
+            console.log('Contenedor adminMap no visible o sin dimensiones');
             return false;
         }
 
-        console.log('✅ Contenedor adminMap listo');
+        console.log('Contenedor adminMap listo');
         return true;
     }
 
@@ -186,7 +185,7 @@ class AdminMapManager {
 
     async loadReportes() {
         if (!this.map || !this.isInitialized) {
-            console.error('❌ Mapa no disponible para cargar reportes');
+            console.error('Mapa no disponible para cargar reportes');
             return;
         }
 

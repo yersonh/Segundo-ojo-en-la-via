@@ -1,4 +1,3 @@
-// components/admin-configuracion.js
 class ConfigManager {
     constructor() {
         this.currentTab = 'general';
@@ -13,7 +12,6 @@ class ConfigManager {
     }
 
     setupEventListeners() {
-        // Navegación entre pestañas
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -21,18 +19,15 @@ class ConfigManager {
             });
         });
 
-        // Guardar configuración
         document.getElementById('configForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveSettings();
         });
 
-        // Restablecer configuración
         document.getElementById('btnResetConfig').addEventListener('click', () => {
             this.resetSettings();
         });
 
-        // Detectar cambios en el formulario
         document.querySelectorAll('#configForm input, #configForm select').forEach(element => {
             element.addEventListener('change', () => {
                 this.unsavedChanges = true;
@@ -40,14 +35,12 @@ class ConfigManager {
             });
         });
 
-        // Cambios en tiempo real para vista previa
         document.querySelectorAll('input[name="tema_oscuro"], select[name="tema_color"]').forEach(element => {
             element.addEventListener('change', () => {
                 this.updateThemePreview();
             });
         });
 
-        // Prevenir pérdida de cambios no guardados
         window.addEventListener('beforeunload', (e) => {
             if (this.unsavedChanges) {
                 e.preventDefault();
@@ -57,7 +50,6 @@ class ConfigManager {
     }
 
     switchTab(tabId) {
-        // Remover clase activa de todas las pestañas
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
         });
@@ -117,7 +109,6 @@ class ConfigManager {
     setFieldValidation(field, isValid, message) {
         field.style.borderColor = isValid ? '' : '#e63946';
 
-        // Remover mensaje anterior
         const existingMessage = field.parentNode.querySelector('.field-error');
         if (existingMessage) {
             existingMessage.remove();
@@ -147,7 +138,6 @@ class ConfigManager {
             const formData = new FormData(document.getElementById('configForm'));
             const settings = Object.fromEntries(formData);
 
-            // Simular guardado (en un sistema real, harías una llamada al backend)
             console.log('Guardando configuración:', settings);
             await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -167,14 +157,12 @@ class ConfigManager {
     }
 
     applyRealTimeChanges(settings) {
-        // Aplicar tema oscuro si está disponible
         if (settings.tema_oscuro === 'on') {
             document.body.classList.add('dark-theme');
         } else {
             document.body.classList.remove('dark-theme');
         }
 
-        // Cambiar título de la plataforma
         if (settings.nombre_plataforma) {
             document.title = settings.nombre_plataforma + ' - Admin';
             const platformNameElements = document.querySelectorAll('.platform-name');
@@ -269,7 +257,6 @@ class ConfigManager {
             document.querySelector('.config-content').prepend(messageElement);
         }
 
-        // Configurar estilos según el tipo
         const styles = {
             success: { bg: '#d4edda', color: '#155724', border: '#c3e6cb', icon: 'fa-check-circle' },
             error: { bg: '#f8d7da', color: '#721c24', border: '#f5c6cb', icon: 'fa-exclamation-circle' },
@@ -284,14 +271,12 @@ class ConfigManager {
         messageElement.innerHTML = `<i class="fas ${style.icon}"></i> ${message}`;
         messageElement.classList.add('show');
 
-        // Ocultar automáticamente después de 5 segundos
         setTimeout(() => {
             messageElement.classList.remove('show');
         }, 5000);
     }
 }
 
-// Inicializar cuando se cargue el DOM
 document.addEventListener('DOMContentLoaded', function() {
     const configTab = document.getElementById('configuracion');
     if (configTab && configTab.classList.contains('active')) {
@@ -299,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// También inicializar cuando se cambie a la pestaña de configuración
 document.addEventListener('click', function(e) {
     if (e.target.matches('.sidebar-menu a[data-tab="configuracion"]')) {
         setTimeout(() => {

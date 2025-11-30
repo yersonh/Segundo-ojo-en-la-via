@@ -55,8 +55,7 @@ export class MarkerManager {
             }
             const data = await resp.json();
 
-            // 🆕 DEBUG TEMPORAL - Ver estructura de datos
-            console.log('🔍 Estructura del primer reporte:', data[0] ? {
+        console.log('🔍 Estructura del primer reporte:', data[0] ? {
                 tiene_latitud: !!data[0].latitud,
                 tiene_longitud: !!data[0].longitud,
                 tiene_tipo_incidente: !!data[0].tipo_incidente,
@@ -83,17 +82,14 @@ export class MarkerManager {
                 return null;
             }
 
-            // Convertir a números si son strings
             const lat = typeof reporte.latitud === 'string' ? parseFloat(reporte.latitud) : reporte.latitud;
             const lng = typeof reporte.longitud === 'string' ? parseFloat(reporte.longitud) : reporte.longitud;
 
-            // Validar que las coordenadas sean números válidos
             if (isNaN(lat) || isNaN(lng)) {
                 console.warn('❌ Coordenadas inválidas:', reporte.id_reporte, reporte.latitud, reporte.longitud);
                 return null;
             }
 
-            // 🆕 VALORES POR DEFECTO PARA CAMPOS OPCIONALES
             const tipoIncidente = reporte.tipo_incidente || 'Desconocido';
             const estado = reporte.estado || 'pendiente';
             const reportId = reporte.id_reporte || `temp-${Date.now()}`;
@@ -163,7 +159,6 @@ export class MarkerManager {
     agregarMarkerOffline(reporteOffline) {
         console.log('📍 Agregando marker offline:', reporteOffline.id);
 
-        // 🆕 VERIFICAR SI EL MARKER YA EXISTE
         const markerExistente = this.markers.find(m =>
             m.options && m.options.customId === `offline-${reporteOffline.id}`
         );
@@ -178,11 +173,9 @@ export class MarkerManager {
             customId: `offline-${reporteOffline.id}` // ID único para evitar duplicados
         });
 
-        // Configurar popup
         const popupContent = this.crearPopupOffline(reporteOffline);
         marker.bindPopup(popupContent);
 
-        // Agregar al mapa y al array
         marker.addTo(this.mapa);
         this.markers.push(marker);
 
@@ -252,7 +245,6 @@ export class MarkerManager {
         return this.markers.map(m => m.data);
     }
 
-    // ✅ AGREGAR MÉTODO FALTANTE
     obtenerNombreTipoIncidente(tipoId) {
         // Mapeo simple de tipos de incidente - puedes expandir esto
         const tipos = {

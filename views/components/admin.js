@@ -1,4 +1,3 @@
-// admin.js - Versión completa sin confirmaciones para cambios de estado
 class AdminManager {
     constructor() {
         this.map = null;
@@ -9,7 +8,6 @@ class AdminManager {
     }
 
     init() {
-        console.log('🚀 Inicializando AdminManager...');
         this.fixScrollIssues();
         this.setupNavigation();
         this.setupEventListeners();
@@ -18,9 +16,8 @@ class AdminManager {
         this.initializeMapIfNeeded();
     }
 
-    // SOLUCIÓN PARA EL SCROLL
     fixScrollIssues() {
-        console.log('🔓 Aplicando fix para scroll...');
+        console.log('Aplicando fix para scroll...');
 
         const elementsToFix = [
             document.documentElement,
@@ -48,13 +45,11 @@ class AdminManager {
         document.documentElement.style.overflow = 'auto';
         document.documentElement.style.height = 'auto';
 
-        console.log('✅ Fix de scroll aplicado');
+        console.log('Fix de scroll aplicado');
     }
 
-    // Navegación entre pestañas
     setupNavigation() {
         document.querySelectorAll('.sidebar-menu a').forEach(link => {
-            // Excluir el logout de la navegación normal
             if (link.id === 'logoutLink' || link.classList.contains('logout-item')) {
                 return;
             }
@@ -81,8 +76,6 @@ class AdminManager {
             });
         });
     }
-
-    // CONFIGURACIÓN DEL LOGOUT - MÉTODO MEJORADO
     setupLogoutHandler() {
         console.log('🔍 Configurando logout handler...');
 
@@ -128,7 +121,6 @@ class AdminManager {
         }
     }
 
-    // MOSTRAR MODAL DE LOGOUT
     showLogoutModal() {
         console.log('🎯 Mostrando modal de logout...');
 
@@ -159,19 +151,15 @@ class AdminManager {
             </div>
         `;
 
-        // Agregar al DOM
         document.body.appendChild(modal);
 
-        // Forzar reflow y luego mostrar
         setTimeout(() => {
             modal.classList.add('show');
         }, 10);
 
-        // Configurar event listeners del modal
         this.setupModalEvents(modal);
     }
 
-    // CONFIGURAR EVENTOS DEL MODAL
     setupModalEvents(modal) {
         // Botón Cancelar
         const cancelBtn = modal.querySelector('#cancelLogout');
@@ -179,19 +167,16 @@ class AdminManager {
             this.closeLogoutModal(modal);
         });
 
-        // Botón Confirmar
         const confirmBtn = modal.querySelector('#confirmLogout');
         confirmBtn.addEventListener('click', () => {
             this.performLogout(confirmBtn);
         });
 
-        // Cerrar al hacer clic fuera
         const overlay = modal.querySelector('.modal-overlay');
         overlay.addEventListener('click', () => {
             this.closeLogoutModal(modal);
         });
 
-        // Cerrar con ESC
         const handleKeydown = (e) => {
             if (e.key === 'Escape') {
                 this.closeLogoutModal(modal);
@@ -200,11 +185,9 @@ class AdminManager {
         };
         document.addEventListener('keydown', handleKeydown);
 
-        // Guardar referencia para limpiar
         modal._keydownHandler = handleKeydown;
     }
 
-    // CERRAR MODAL
     closeLogoutModal(modal) {
         modal.classList.remove('show');
         document.removeEventListener('keydown', modal._keydownHandler);
@@ -215,8 +198,6 @@ class AdminManager {
             }
         }, 300);
     }
-
-    // EJECUTAR LOGOUT
     performLogout(button) {
         console.log('🔐 Ejecutando logout...');
 
@@ -264,18 +245,18 @@ class AdminManager {
 
     initializeMapIfNeeded() {
         if (this.mapInitialized) {
-            console.log('ℹ️ Mapa ya inicializado');
+            console.log('Mapa ya inicializado');
             return;
         }
 
         const mapContainer = document.getElementById('adminMap');
         if (!mapContainer) {
-            console.error('❌ Contenedor adminMap no encontrado');
+            console.error('Contenedor adminMap no encontrado');
             return;
         }
 
         if (!this.isContainerReady(mapContainer)) {
-            console.error('❌ Contenedor no está listo');
+            console.error('Contenedor no está listo');
             return;
         }
 
@@ -338,7 +319,7 @@ class AdminManager {
 
     async cargarReportesEnMapa() {
         if (!this.map || !this.mapInitialized) {
-            console.log('❌ Mapa no disponible para cargar reportes');
+            console.log('Mapa no disponible para cargar reportes');
             return;
         }
 
@@ -388,14 +369,14 @@ class AdminManager {
             if (this.markers.length > 0) {
                 const group = L.featureGroup(this.markers);
                 this.map.fitBounds(group.getBounds().pad(0.1));
-                console.log('🎯 Vista ajustada a los marcadores');
+                console.log('Vista ajustada a los marcadores');
             } else {
-                console.log('ℹ️ No hay marcadores para mostrar');
+                console.log('No hay marcadores para mostrar');
                 this.showMapMessage('No hay reportes con coordenadas válidas para mostrar', 'info');
             }
 
         } catch (error) {
-            console.error('❌ Error cargando reportes:', error);
+            console.error('Error cargando reportes:', error);
             this.showMapMessage('Error al cargar reportes: ' + error.message, 'error');
         }
     }
@@ -408,7 +389,7 @@ class AdminManager {
             }
         });
         this.markers = [];
-        console.log('✅ Marcadores limpiados');
+        console.log('Marcadores limpiados');
     }
 
     cleanContainer(container) {
@@ -425,7 +406,7 @@ class AdminManager {
     }
 
     refreshMap() {
-        console.log('🔁 Refrescando mapa y reportes...');
+        console.log('Refrescando mapa y reportes...');
 
         if (this.map && this.mapInitialized) {
             this.cargarReportesEnMapa();
@@ -454,7 +435,7 @@ class AdminManager {
         const mapContainer = document.getElementById('adminMap');
         if (mapContainer) {
             const color = tipo === 'error' ? '#dc3545' :
-                         tipo === 'warning' ? '#f39c12' : '#007bff';
+                        tipo === 'warning' ? '#f39c12' : '#007bff';
             const icon = tipo === 'error' ? 'exclamation-triangle' :
                         tipo === 'warning' ? 'exclamation-circle' : 'info-circle';
 
@@ -529,10 +510,6 @@ class AdminManager {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
-
-    // ==============================================
-    // SISTEMA DE ALERTAS A AUTORIDADES (MANTENER)
-    // ==============================================
 
     setupAlertHandlers() {
         // Botón para abrir modal de alertas

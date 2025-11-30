@@ -1,5 +1,5 @@
 <?php
-// components/admin-analytics.php
+
 ?>
 
 <div class="section">

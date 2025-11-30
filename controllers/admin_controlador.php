@@ -3,11 +3,8 @@ class AdminControlador {
     private $db;
 
     public function __construct($database) {
-        // Usar el método conectar() que devuelve el objeto PDO
         $this->db = $database->conectar();
     }
-
-    // Método para obtener estadísticas
     public function obtenerEstadisticas() {
         try {
             $estadisticas = [];

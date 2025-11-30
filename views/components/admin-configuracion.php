@@ -1,7 +1,5 @@
 <?php
-// components/admin-configuracion.php
 
-// Obtener configuraciones actuales
 $configuraciones = [
     'nombre_plataforma' => 'Ojo en la Vía',
     'email_contacto' => 'ojoenlaviaparalosciudadanos@gmail.com',

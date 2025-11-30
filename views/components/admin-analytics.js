@@ -1,4 +1,3 @@
-// components/admin-analytics.js
 class AnalyticsManager {
     constructor() {
         this.charts = {};
@@ -13,24 +12,20 @@ class AnalyticsManager {
     }
 
     setupEventListeners() {
-        // Filtro de rango de tiempo
         document.getElementById('rangoTiempo').addEventListener('change', (e) => {
             this.currentRange = parseInt(e.target.value);
             this.loadAnalyticsData();
         });
 
-        // Cambio tipo de gráfica
         document.getElementById('tipoGrafica').addEventListener('change', (e) => {
             this.updateChartType('tipoChart', e.target.value);
         });
 
-        // Agrupación temporal
         document.getElementById('agrupacionTiempo').addEventListener('change', (e) => {
             this.currentAgrupacion = e.target.value;
             this.loadTimelineData();
         });
 
-        // Métricas de usuarios
         document.getElementById('metricasUsuarios').addEventListener('change', (e) => {
             this.updateUsersChart(e.target.value);
         });
@@ -354,7 +349,6 @@ class AnalyticsManager {
         });
     }
 
-    // En components/admin-analytics.js - Método updateUsuariosTable
 updateUsuariosTable(usuariosData) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
@@ -446,7 +440,6 @@ updateUsuariosTable(usuariosData) {
     }
 
     showError(message) {
-        // Puedes implementar un sistema de notificaciones aquí
         alert(message);
     }
 
@@ -458,12 +451,10 @@ updateUsuariosTable(usuariosData) {
     }
 
     updateUsersChart(metric) {
-        // Implementar cambio de métricas para usuarios
         console.log('Actualizando gráfica de usuarios con métrica:', metric);
     }
 }
 
-// Inicialización (mantener igual)
 document.addEventListener('DOMContentLoaded', function() {
     const analyticsTab = document.getElementById('analytics');
     if (analyticsTab && analyticsTab.classList.contains('active')) {

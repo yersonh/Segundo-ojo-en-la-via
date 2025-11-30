@@ -10,7 +10,7 @@ export class GalleryManager {
     async mostrarGaleria(idReporte, indiceInicial = 0) {
         try {
             console.log('🖼️ Abriendo galería para reporte:', idReporte);
-            
+
             // Obtener datos del reporte
             const reporte = await this._obtenerReporte(idReporte);
             if (!reporte) {
@@ -24,7 +24,7 @@ export class GalleryManager {
             }
 
             this._crearOverlayGaleria(idReporte, imagenes, indiceInicial);
-            
+
         } catch (error) {
             ErrorHandler.mostrarError('Error al mostrar galería', error);
             this._mostrarAlerta('Error al cargar la galería', 'error');
@@ -32,23 +32,21 @@ export class GalleryManager {
     }
 
     async _obtenerReporte(idReporte) {
-        // Intentar obtener del cache primero
         if (this.reportesCache.has(idReporte)) {
             return this.reportesCache.get(idReporte);
         }
 
-        // Obtener todos los reportes del servidor
         try {
             const response = await fetch('../../controllers/reportecontrolador.php?action=listar');
             if (!response.ok) throw new Error('Error al obtener reportes');
-            
+
             const reportes = await response.json();
             const reporte = reportes.find(r => r.id_reporte == idReporte);
-            
+
             if (reporte) {
                 this.reportesCache.set(idReporte, reporte);
             }
-            
+
             return reporte;
         } catch (error) {
             throw new Error(`No se pudo cargar el reporte: ${error.message}`);
@@ -78,7 +76,7 @@ export class GalleryManager {
             justify-content: center;
             z-index: 10000;
         `;
-        
+
         // Contenedor principal
         const galeriaContainer = document.createElement('div');
         galeriaContainer.style.cssText = `
@@ -91,20 +89,19 @@ export class GalleryManager {
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         `;
-        
+
         // Ensamblar componentes
         galeriaContainer.appendChild(this._crearHeaderGaleria(idReporte, imagenes));
         galeriaContainer.appendChild(this._crearAreaImagen(imagenes));
         galeriaContainer.appendChild(this._crearControles(imagenes));
-        
+
         overlay.appendChild(galeriaContainer);
         overlay.appendChild(this._crearBotonCerrar());
-        
+
         document.body.appendChild(overlay);
-        
-        // Configurar eventos de teclado
+
         this._configurarEventosTeclado();
-        
+
         console.log('✅ Galería mostrada correctamente');
     }
 
@@ -118,7 +115,7 @@ export class GalleryManager {
             align-items: center;
             border-bottom: 1px solid #404040;
         `;
-        
+
         header.innerHTML = `
             <div style="color: white; font-weight: 600; font-size: 16px;">
                 📸 Galería - Reporte #${idReporte}
@@ -127,7 +124,7 @@ export class GalleryManager {
                 ${this.indiceActual + 1} de ${imagenes.length}
             </div>
         `;
-        
+
         return header;
     }
 
@@ -144,7 +141,7 @@ export class GalleryManager {
             overflow: hidden;
             position: relative;
         `;
-        
+
         const imgPrincipal = document.createElement('img');
         imgPrincipal.src = imagenes[this.indiceActual];
         imgPrincipal.alt = `Imagen ${this.indiceActual + 1} del reporte`;
@@ -157,10 +154,10 @@ export class GalleryManager {
             transition: transform 0.3s ease;
             cursor: zoom-in;
         `;
-        
+
         // Configurar zoom
         this._configurarZoomImagen(imgPrincipal);
-        
+
         imagenContainer.appendChild(imgPrincipal);
         return imagenContainer;
     }
@@ -202,28 +199,28 @@ export class GalleryManager {
             align-items: center;
             border-top: 1px solid #404040;
         `;
-        
+
         // Botón anterior
         const btnAnterior = this._crearBotonNavegacion(
-            '← Anterior', 
+            '← Anterior',
             this.indiceActual === 0,
             () => this._navegarImagen(-1, imagenes)
         );
-        
+
         // Indicadores
         const indicadores = this._crearIndicadores(imagenes);
-        
+
         // Botón siguiente
         const btnSiguiente = this._crearBotonNavegacion(
-            'Siguiente →', 
+            'Siguiente →',
             this.indiceActual === imagenes.length - 1,
             () => this._navegarImagen(1, imagenes)
         );
-        
+
         controles.appendChild(btnAnterior);
         controles.appendChild(indicadores);
         controles.appendChild(btnSiguiente);
-        
+
         return controles;
     }
 
@@ -242,28 +239,28 @@ export class GalleryManager {
             opacity: ${deshabilitado ? '0.5' : '1'};
             transition: all 0.3s ease;
         `;
-        
+
         if (!deshabilitado) {
             boton.addEventListener('mouseover', () => {
                 boton.style.background = '#2563eb';
                 boton.style.transform = 'translateY(-1px)';
             });
-            
+
             boton.addEventListener('mouseout', () => {
                 boton.style.background = '#3b82f6';
                 boton.style.transform = 'translateY(0)';
             });
         }
-        
+
         boton.addEventListener('click', onClick);
-        
+
         return boton;
     }
 
     _crearIndicadores(imagenes) {
         const contenedor = document.createElement('div');
         contenedor.style.cssText = 'display: flex; gap: 8px; align-items: center;';
-        
+
         imagenes.forEach((_, index) => {
             const punto = document.createElement('div');
             punto.style.cssText = `
@@ -274,14 +271,14 @@ export class GalleryManager {
                 cursor: pointer;
                 transition: background 0.3s ease;
             `;
-            
+
             punto.addEventListener('click', () => {
                 this._navegarAImagen(index, imagenes);
             });
-            
+
             contenedor.appendChild(punto);
         });
-        
+
         return contenedor;
     }
 
@@ -307,28 +304,28 @@ export class GalleryManager {
             z-index: 10001;
             transition: all 0.3s ease;
         `;
-        
+
         boton.addEventListener('mouseover', () => {
             boton.style.background = '#ef4444';
             boton.style.transform = 'scale(1.1)';
         });
-        
+
         boton.addEventListener('mouseout', () => {
             boton.style.background = 'rgba(239, 68, 68, 0.9)';
             boton.style.transform = 'scale(1)';
         });
-        
+
         boton.addEventListener('click', () => {
             this.cerrarGaleria();
         });
-        
+
         return boton;
     }
 
     _configurarEventosTeclado() {
         this._keyHandler = (e) => {
             if (!this.galeriaActual) return;
-            
+
             switch(e.key) {
                 case 'Escape':
                     this.cerrarGaleria();
@@ -341,7 +338,7 @@ export class GalleryManager {
                     break;
             }
         };
-        
+
         document.addEventListener('keydown', this._keyHandler);
     }
 
@@ -354,7 +351,7 @@ export class GalleryManager {
 
     _navegarAImagen(nuevoIndice, imagenes) {
         this.indiceActual = nuevoIndice;
-        
+
         // Actualizar imagen
         const imgPrincipal = document.querySelector('.galeria-overlay img');
         if (imgPrincipal) {
@@ -362,16 +359,16 @@ export class GalleryManager {
             imgPrincipal.alt = `Imagen ${nuevoIndice + 1} del reporte`;
             imgPrincipal.style.transform = 'scale(1)'; // Reset zoom
         }
-        
+
         // Actualizar contador
         const contador = document.querySelector('.galeria-overlay div:last-child');
         if (contador) {
             contador.textContent = `${nuevoIndice + 1} de ${imagenes.length}`;
         }
-        
+
         // Actualizar indicadores
         this._actualizarIndicadores(nuevoIndice, imagenes.length);
-        
+
         // Actualizar estado de botones
         this._actualizarBotonesNavegacion(nuevoIndice, imagenes.length);
     }
@@ -389,7 +386,7 @@ export class GalleryManager {
             // Botón anterior
             botones[0].disabled = indiceActual === 0;
             botones[0].style.opacity = indiceActual === 0 ? '0.5' : '1';
-            
+
             // Botón siguiente
             botones[1].disabled = indiceActual === totalImagenes - 1;
             botones[1].style.opacity = indiceActual === totalImagenes - 1 ? '0.5' : '1';
@@ -411,9 +408,9 @@ export class GalleryManager {
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `;
         alerta.textContent = mensaje;
-        
+
         document.body.appendChild(alerta);
-        
+
         setTimeout(() => {
             if (alerta.parentNode) {
                 alerta.parentNode.removeChild(alerta);
@@ -426,12 +423,12 @@ export class GalleryManager {
         if (overlay) {
             document.body.removeChild(overlay);
         }
-        
+
         if (this._keyHandler) {
             document.removeEventListener('keydown', this._keyHandler);
             this._keyHandler = null;
         }
-        
+
         this.galeriaActual = null;
         this.indiceActual = 0;
     }
@@ -452,7 +449,7 @@ export class GalleryManager {
             z-index: 10000;
             cursor: pointer;
         `;
-        
+
         const img = document.createElement('img');
         img.src = urlImagen;
         img.style.cssText = `
@@ -462,7 +459,7 @@ export class GalleryManager {
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         `;
-        
+
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '×';
         closeBtn.style.cssText = `
@@ -484,31 +481,31 @@ export class GalleryManager {
             z-index: 10001;
             transition: all 0.3s ease;
         `;
-        
+
         closeBtn.addEventListener('mouseover', function() {
             this.style.background = '#ef4444';
             this.style.transform = 'scale(1.1)';
         });
-        
+
         closeBtn.addEventListener('mouseout', function() {
             this.style.background = 'rgba(239, 68, 68, 0.9)';
             this.style.transform = 'scale(1)';
         });
-        
+
         const closeHandler = () => {
             document.body.removeChild(overlay);
             document.removeEventListener('keydown', keyHandler);
         };
-        
+
         overlay.addEventListener('click', closeHandler);
         closeBtn.addEventListener('click', closeHandler);
-        
+
         const keyHandler = (e) => {
             if (e.key === 'Escape') closeHandler();
         };
-        
+
         document.addEventListener('keydown', keyHandler);
-        
+
         overlay.appendChild(img);
         overlay.appendChild(closeBtn);
         document.body.appendChild(overlay);

@@ -1,6 +1,4 @@
-<!-- Dashboard Content -->
 <div class="dashboard-content">
-    <!-- Dashboard Cards -->
     <div class="dashboard-cards">
         <div class="card reportes">
             <i class="fas fa-map-marker-alt" style="color: #3498db;"></i>

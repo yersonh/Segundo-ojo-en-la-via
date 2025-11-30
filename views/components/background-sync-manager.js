@@ -10,7 +10,7 @@ class BackgroundSyncManager {
     async initialize() {
         if (this.initialized) return;
 
-        console.log('🔄 Inicializando Background Sync Manager...');
+        console.log('Inicializando Background Sync Manager...');
 
         try {
             // 1. Verificar soporte
@@ -19,7 +19,7 @@ class BackgroundSyncManager {
             if (this.useServiceWorker) {
                 await this.registerServiceWorker();
             } else {
-                console.log('⚠️ Background Sync no disponible, usando métodos tradicionales');
+                console.log('Background Sync no disponible, usando métodos tradicionales');
             }
 
             // 2. Configurar event listeners
@@ -29,10 +29,10 @@ class BackgroundSyncManager {
             await this.sincronizarPendientesAlInicio();
 
             this.initialized = true;
-            console.log('✅ Background Sync Manager inicializado');
+            console.log('Background Sync Manager inicializado');
 
         } catch (error) {
-            console.error('❌ Error inicializando Background Sync Manager:', error);
+            console.error('Error inicializando Background Sync Manager:', error);
         }
     }
 
@@ -43,7 +43,7 @@ class BackgroundSyncManager {
     async registerServiceWorker() {
         try {
             this.serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js');
-            console.log('✅ Service Worker registrado:', this.serviceWorkerRegistration.scope);
+            console.log('Service Worker registrado:', this.serviceWorkerRegistration.scope);
 
             // Configurar escucha de mensajes
             navigator.serviceWorker.addEventListener('message', (event) => {
@@ -57,7 +57,7 @@ class BackgroundSyncManager {
 
             return this.serviceWorkerRegistration;
         } catch (error) {
-            console.log('⚠️ Service Worker no disponible:', error.message);
+            console.log('Service Worker no disponible:', error.message);
             this.useServiceWorker = false;
             throw error;
         }
@@ -69,7 +69,7 @@ class BackgroundSyncManager {
             if (this.useServiceWorker && this.serviceWorkerRegistration) {
                 try {
                     await this.serviceWorkerRegistration.sync.register('sincronizar-reportes');
-                    console.log('🔄 Background Sync registrado');
+                    console.log('Background Sync registrado');
                 } catch (error) {
                     console.log('⚠️ No se pudo registrar Background Sync:', error);
                     // Fallback a sincronización tradicional
@@ -83,7 +83,7 @@ class BackgroundSyncManager {
         // Sincronización tradicional cuando se recupera conexión
         window.addEventListener('online', () => {
             if (!this.useServiceWorker) {
-                console.log('📡 Conexión recuperada - Sincronizando (tradicional)...');
+                console.log('Conexión recuperada - Sincronizando (tradicional)...');
                 this.sincronizarSilenciosamente();
             }
         });
@@ -91,7 +91,7 @@ class BackgroundSyncManager {
         // Sincronizar cuando la página se vuelve visible
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && navigator.onLine) {
-                console.log('👀 Página visible - Verificando sincronización...');
+                console.log('Página visible - Verificando sincronización...');
                 this.sincronizarSilenciosamente();
             }
         });
@@ -100,7 +100,7 @@ class BackgroundSyncManager {
         if (!this.useServiceWorker) {
             setInterval(() => {
                 if (navigator.onLine && !this.syncInProgress) {
-                    console.log('⏰ Sincronización periódica...');
+                    console.log('Sincronización periódica...');
                     this.sincronizarSilenciosamente();
                 }
             }, 2 * 60 * 1000);
@@ -113,7 +113,7 @@ class BackgroundSyncManager {
             if (navigator.onLine) {
                 const pendientes = JSON.parse(localStorage.getItem('reportes_pendientes') || '[]');
                 if (pendientes.length > 0) {
-                    console.log(`🔍 ${pendientes.length} reportes pendientes al inicio`);
+                    console.log(`${pendientes.length} reportes pendientes al inicio`);
                     await this.sincronizarSilenciosamente();
                 }
             }
@@ -125,47 +125,45 @@ async sincronizarSilenciosamente() {
         return;
     }
 
-    // 🆕 VERIFICAR SI REALMENTE HAY REPORTES PENDIENTES
     const pendientes = JSON.parse(localStorage.getItem('reportes_pendientes') || '[]');
     if (pendientes.length === 0) {
-        console.log('ℹ️ No hay reportes pendientes para sincronizar');
+        console.log('ℹNo hay reportes pendientes para sincronizar');
         return;
     }
 
     this.syncInProgress = true;
-    console.log(`🔄 Iniciando sincronización de ${pendientes.length} reportes...`);
+    console.log(`Iniciando sincronización de ${pendientes.length} reportes...`);
 
     try {
         await OfflineManager.sincronizarReportesPendientes();
-        console.log('✅ Sincronización silenciosa completada');
+        console.log('Sincronización silenciosa completada');
     } catch (error) {
-        console.error('❌ Error en sincronización silenciosa:', error);
+        console.error('Error en sincronización silenciosa:', error);
     } finally {
         this.syncInProgress = false;
     }
 }
 
-    // 🆕 Sincronización manual (desde botón)
     async sincronizarManual() {
         if (this.syncInProgress) {
-            this.mostrarMensaje('⏳ Sincronización ya en progreso...', 'info');
+            this.mostrarMensaje('Sincronización ya en progreso...', 'info');
             return;
         }
 
         if (!navigator.onLine) {
-            this.mostrarMensaje('❌ No hay conexión a internet', 'error');
+            this.mostrarMensaje('No hay conexión a internet', 'error');
             return;
         }
 
-        this.mostrarMensaje('🔄 Sincronizando reportes pendientes...', 'info');
+        this.mostrarMensaje('Sincronizando reportes pendientes...', 'info');
         this.syncInProgress = true;
 
         try {
             await OfflineManager.sincronizarReportesPendientes();
-            this.mostrarMensaje('✅ Sincronización completada', 'success');
+            this.mostrarMensaje('Sincronización completada', 'success');
         } catch (error) {
-            console.error('❌ Error en sincronización manual:', error);
-            this.mostrarMensaje('❌ Error al sincronizar reportes', 'error');
+            console.error('Error en sincronización manual:', error);
+            this.mostrarMensaje('Error al sincronizar reportes', 'error');
         } finally {
             this.syncInProgress = false;
         }
@@ -195,7 +193,6 @@ async sincronizarSilenciosamente() {
         }
     }
 
-    // 🆕 Verificar estado
     getStatus() {
         return {
             initialized: this.initialized,
@@ -206,14 +203,12 @@ async sincronizarSilenciosamente() {
         };
     }
 
-    // 🆕 Forzar sincronización
     async forceSync() {
         console.log('🚀 Forzando sincronización...');
         await this.sincronizarManual();
     }
 }
 
-// 🆕 Instancia global mejorada
 const backgroundSyncManager = new BackgroundSyncManager();
 
 // Inicialización automática mejorada
@@ -221,7 +216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await backgroundSyncManager.initialize();
 
-        // 🆕 Exponer globalmente para debugging
         window.backgroundSyncManager = backgroundSyncManager;
         console.log('🎯 BackgroundSyncManager listo');
     } catch (error) {
@@ -229,7 +223,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// 🆕 También inicializar cuando el Service Worker está listo
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(() => {
         if (!backgroundSyncManager.initialized) {

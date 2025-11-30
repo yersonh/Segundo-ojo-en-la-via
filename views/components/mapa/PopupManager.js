@@ -20,8 +20,7 @@ export class PopupManager {
         });
 
         const colorEstado = Config.icons.estado[reporte.estado] || Config.icons.defaultColor;
-        
-        // Construir HTML de imágenes
+
         let imagenesHTML = '';
         if (reporte.imagenes && reporte.imagenes.length > 0) {
             imagenesHTML = this._crearHTMLImagenes(reporte);
@@ -42,15 +41,15 @@ export class PopupManager {
                         ${reporte.tipo_incidente}
                     </h4>
                 </div>
-                
+
                 <!-- Contenido -->
                 <div style="padding: 0 10px;">
                     ${imagenesHTML}
-                    
+
                     <p style="margin: 0 0 15px 0; font-size: 14px; line-height: 1.5; color: #555;">
                         ${reporte.descripcion}
                     </p>
-                    
+
                     <!-- Información detallada -->
                     <div style="font-size: 13px; color: #666; line-height: 1.6;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
@@ -60,7 +59,7 @@ export class PopupManager {
                                 <span style="color: #2c3e50;">${reporte.usuario}</span>
                             </div>
                         </div>
-                        
+
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
                             <span style="color: #e74c3c; font-size: 14px;">📅</span>
                             <div>
@@ -68,7 +67,7 @@ export class PopupManager {
                                 <span style="color: #2c3e50;">${fechaFormateada}</span>
                             </div>
                         </div>
-                        
+
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
                             <span style="color: ${colorEstado}; font-size: 14px;">🏷️</span>
                             <div>
@@ -84,10 +83,10 @@ export class PopupManager {
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Botón de acción -->
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <button onclick="window.mapaSistema.getManager('popups').abrirComentarios(${reporte.id_reporte})" 
+                        <button onclick="window.mapaSistema.getManager('popups').abrirComentarios(${reporte.id_reporte})"
                                 style="
                                     background: linear-gradient(135deg, #3498db, #2980b9);
                                     color: white;
@@ -122,15 +121,15 @@ export class PopupManager {
                 </div>
                 <div style="padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
         `;
-        
+
         const imagenesAMostrar = reporte.imagenes.slice(0, 6);
-        
+
         imagenesAMostrar.forEach((urlImagen, index) => {
             const esUltima = index === 5 && totalImagenes > 6;
-            
+
             if (esUltima) {
                 html += `
-                    <div style="position: relative; display: inline-block; cursor: pointer;" 
+                    <div style="position: relative; display: inline-block; cursor: pointer;"
                         onclick="window.mapaSistema.getManager('gallery').mostrarGaleria(${reporte.id_reporte})">
                         <div style="width: 80px; height: 80px; background: #6c757d; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
                             +${totalImagenes - 5}
@@ -140,8 +139,8 @@ export class PopupManager {
             } else {
                 html += `
                     <div style="position: relative; display: inline-block;">
-                        <img 
-                            src="${urlImagen}" 
+                        <img
+                            src="${urlImagen}"
                             alt="Imagen ${index + 1}"
                             style="
                                 width: 80px;
@@ -166,7 +165,7 @@ export class PopupManager {
                 `;
             }
         });
-        
+
         html += `
                 </div>
                 <div style="background: #f8f9fa; padding: 8px 10px; text-align: center; border-top: 1px solid #e0e0e0;">
@@ -176,7 +175,7 @@ export class PopupManager {
                 </div>
             </div>
         `;
-        
+
         return html;
     }
 
@@ -186,7 +185,7 @@ export class PopupManager {
         const R = (num >> 16) + amt;
         const G = (num >> 8 & 0x00FF) + amt;
         const B = (num & 0x0000FF) + amt;
-        
+
         return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
                 (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
                 (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);

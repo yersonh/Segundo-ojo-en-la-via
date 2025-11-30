@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/admin_controlador.php';
 
-// Verificar que el usuario esté logueado y sea administrador
 if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] != 1) {
     http_response_code(403);
     echo json_encode(['error' => 'Acceso no autorizado']);

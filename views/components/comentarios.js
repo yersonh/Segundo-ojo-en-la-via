@@ -1,7 +1,6 @@
-// Módulo para gestionar comentarios - VERSIÓN CORREGIDA
 const ComentariosManager = {
     inicializado: false,
-    enviando: false, // 🆕 DEFINIR LA VARIABLE QUE FALTABA
+    enviando: false,
 
     inicializar() {
         if (this.inicializado) {
@@ -11,27 +10,22 @@ const ComentariosManager = {
 
         this.configurarEventos();
         this.inicializado = true;
-        console.log('✅ ComentariosManager inicializado');
     },
 
     configurarEventos() {
         const formComentario = document.getElementById('formComentario');
         if (formComentario) {
-            // 🆕 CORREGIDO: Usar arrow function para mantener contexto
             formComentario.removeEventListener('submit', this.manejadorSubmit);
 
             this.manejadorSubmit = (e) => this.agregarComentario(e);
             formComentario.addEventListener('submit', this.manejadorSubmit);
         }
 
-        // Contador de caracteres
         const textoComentario = document.getElementById('textoComentario');
         if (textoComentario) {
-            // 🆕 CORREGIDO: Usar arrow function para mantener contexto
             textoComentario.addEventListener('input', (e) => this.actualizarContadorCaracteres(e));
         }
 
-        // Cerrar modal al hacer clic fuera
         const modalOverlay = document.getElementById('comentariosSection');
         if (modalOverlay) {
             modalOverlay.addEventListener('click', (e) => {
@@ -64,7 +58,7 @@ const ComentariosManager = {
         try {
             const comentariosList = document.getElementById('comentariosList');
             if (!comentariosList) {
-                console.error('❌ Elemento comentariosList no encontrado');
+                console.error('Elemento comentariosList no encontrado');
                 return;
             }
 
@@ -85,7 +79,6 @@ const ComentariosManager = {
                 return;
             }
 
-            // 🆕 CORREGIDO: Usar función flecha para mantener contexto
             comentarios.forEach(comentario => {
                 const fecha = this.formatearFecha(comentario.fecha_comentario);
 
@@ -114,7 +107,7 @@ const ComentariosManager = {
         e.preventDefault();
 
         if (this.enviando) {
-            console.log('⚠️ Ya se está enviando un comentario');
+            console.log('Ya se está enviando un comentario');
             return;
         }
 
@@ -127,7 +120,7 @@ const ComentariosManager = {
         const id_usuario = window.usuarioId;
 
         if (!btnComentario || !textoComentario) {
-            console.error('❌ Elementos del formulario no encontrados');
+            console.error('Elementos del formulario no encontrados');
             this.enviando = false;
             return;
         }
@@ -148,25 +141,20 @@ const ComentariosManager = {
             if (result.success) {
                 textoComentario.value = '';
 
-                // 🆕 CORREGIDO: Actualizar contador correctamente
                 this.actualizarContadorCaracteres({ target: textoComentario });
 
-                // Recargar comentarios silenciosamente
                 await this.cargarComentarios(id_reporte);
 
-                console.log('✅ Comentario agregado correctamente');
+                console.log('Comentario agregado correctamente');
 
-                // ✅ NOTIFICAR AL DUEÑO DEL REPORTE
                 await this.notificarComentario(id_reporte, id_usuario);
 
-                // 🆕 CORREGIDO: Actualizar contador en el post (si existe la función)
                 if (typeof window.actualizarContadorComentarios === 'function') {
                     window.actualizarContadorComentarios(id_reporte);
                 }
 
             } else {
                 console.error('Error al agregar comentario:', result.mensaje || result.error);
-                // 🆕 MOSTRAR ERROR AL USUARIO
                 alert('Error al agregar comentario: ' + (result.mensaje || result.error));
             }
         } catch (error) {
@@ -179,10 +167,8 @@ const ComentariosManager = {
         }
     },
 
-    // ✅ FUNCIÓN PARA NOTIFICAR COMENTARIO
     async notificarComentario(id_reporte, id_usuario_origen) {
         try {
-            // Obtener el dueño del reporte
             const resp = await fetch(`../../controllers/reportecontrolador.php?action=obtener_propietario&id_reporte=${id_reporte}`);
             const data = await resp.json();
 
@@ -197,7 +183,7 @@ const ComentariosManager = {
                     body: formData
                 });
 
-                console.log('✅ Notificación de comentario enviada');
+                console.log('Notificación de comentario enviada');
             }
         } catch (error) {
             console.error('Error notificando comentario:', error);
@@ -210,7 +196,7 @@ const ComentariosManager = {
         const comentariosSection = document.getElementById('comentariosSection');
 
         if (!comentarioIdReporte || !comentariosSection) {
-            console.error('❌ Elementos necesarios para comentarios no encontrados');
+            console.error('Elementos necesarios para comentarios no encontrados');
             return;
         }
 
@@ -220,13 +206,10 @@ const ComentariosManager = {
             comentarioIdUsuario.value = window.usuarioId || '';
         }
 
-        // Mostrar sección
         comentariosSection.style.display = 'flex';
 
-        // Cargar comentarios
         this.cargarComentarios(id_reporte);
 
-        // Enfocar el textarea
         setTimeout(() => {
             const textoComentario = document.getElementById('textoComentario');
             if (textoComentario) {
@@ -252,7 +235,6 @@ const ComentariosManager = {
         }
     },
 
-    // 🆕 FUNCIÓN PARA FORMATEAR FECHA CORRECTAMENTE
     formatearFecha(fechaString) {
         try {
             const fecha = new Date(fechaString);
@@ -286,7 +268,6 @@ const ComentariosManager = {
     }
 };
 
-// 🆕 FUNCIÓN GLOBAL PARA ACTUALIZAR CONTADOR EN POSTS
 window.actualizarContadorComentarios = async function(id_reporte) {
     try {
         const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`);
@@ -313,10 +294,9 @@ window.actualizarContadorComentarios = async function(id_reporte) {
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     ComentariosManager.inicializar();
-    console.log('🔄 ComentariosManager listo para inicializar...');
+    console.log('ComentariosManager listo para inicializar...');
 });
 
-// 🆕 INICIALIZACIÓN ALTERNATIVA POR SI FALLA LA ANTERIOR
 setTimeout(() => {
     if (!ComentariosManager.inicializado) {
         console.log('🔄 Inicializando ComentariosManager con timeout...');

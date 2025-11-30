@@ -1,23 +1,19 @@
 <?php
 class SessionManager {
     public static function start() {
-        // DEBUG
         error_log("=== INICIANDO SessionManager::start() ===");
         error_log("Estado sesión inicial: " . session_status());
         error_log("APP_ENV: " . (getenv('APP_ENV') ?: 'NOT_SET'));
         error_log("REDIS_URL: " . (getenv('REDIS_URL') ?: 'NOT_SET'));
 
-        // VERIFICAR si la sesión ya está iniciada - MOVER ESTO AL PRINCIPIO
         if (session_status() === PHP_SESSION_ACTIVE) {
             error_log("🔍 SessionManager: Sesión ya está activa - ID: " . session_id());
-            return; // No hacer nada si ya está iniciada
+            return;
         }
 
-        // Configurar Redis PRIMERO
         $redisUrl = getenv('REDIS_URL') ?: 'redis://default:DRNukNuOugIPIHsJZOxwPuyrBySWqjzC@redis.railway.internal:6379';
         self::setupRedisSession($redisUrl);
 
-        // Configurar cookies
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => '/',
@@ -35,10 +31,8 @@ class SessionManager {
         ini_set('session.cookie_httponly', 1);
         ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
 
-        // INICIAR SESIÓN
         session_start();
 
-        // DEBUG: Verificar datos de sesión después de iniciar
         error_log("✅ SessionManager: SESION INICIADA - ID: " . session_id());
         error_log("📊 SessionManager: DATOS SESION: " . print_r($_SESSION, true));
 

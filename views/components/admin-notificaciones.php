@@ -67,10 +67,9 @@ $notificaciones = $adminControlador->obtenerNotificacionesNoLeidas($idUsuarioAct
                         </div>
                         <div class="notificacion-acciones">
                             <?php if ($notif['id_reporte']): ?>
-                                <!-- 🆕 CORREGIDO: Ir a pestaña de reportes con ID específico -->
                                 <a href="#" class="btn-ver-reporte"
-                                   data-tab="reportes"
-                                   data-reporte-id="<?php echo $notif['id_reporte']; ?>">
+                                    data-tab="reportes"
+                                    data-reporte-id="<?php echo $notif['id_reporte']; ?>">
                                     <i class="fas fa-eye"></i> Ver Reporte
                                 </a>
                             <?php endif; ?>

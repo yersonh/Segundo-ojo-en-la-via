@@ -1,4 +1,3 @@
-<!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-header">
         <h2>Ojo en la Vía</h2>

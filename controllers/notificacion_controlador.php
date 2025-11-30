@@ -9,11 +9,9 @@ try {
     $database = new Database();
     $db = $database->conectar();
 
-    // Verificar sesión
     $id_usuario = $_SESSION['usuario_id'] ?? null;
 
     switch ($action) {
-        // 🔔 Obtener nuevas notificaciones para el usuario actual
         case 'obtener_nuevas':
             if (!$id_usuario) {
                 echo json_encode(['success' => false, 'error' => 'Usuario no autenticado']);
@@ -58,7 +56,6 @@ try {
             ]);
             break;
 
-        // ✅ Marcar una notificación como leída
         case 'marcar_leida':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -72,7 +69,6 @@ try {
                 break;
             }
 
-            // Verificar que la notificación pertenece al usuario
             if ($id_usuario) {
                 $sqlCheck = "SELECT id_notificacion FROM notificacion
                            WHERE id_notificacion = :id_notif AND id_usuario_destino = :id_usuario";
@@ -93,7 +89,6 @@ try {
             echo json_encode(['success' => true, 'mensaje' => 'Notificación marcada como leída']);
             break;
 
-        // ✅ Marcar todas como leídas
         case 'marcar_todas_leidas':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -113,7 +108,6 @@ try {
             echo json_encode(['success' => true, 'mensaje' => 'Todas las notificaciones marcadas como leídas']);
             break;
 
-        // 📋 LISTAR NOTIFICACIONES PARA EL USUARIO
         case 'listar':
             if (!$id_usuario) {
                 echo json_encode(['success' => false, 'error' => 'Usuario no autenticado']);
@@ -146,7 +140,6 @@ try {
             echo json_encode($notificaciones);
             break;
 
-        // 🔢 CONTAR NOTIFICACIONES NO LEÍDAS
         case 'contar_no_leidas':
             try {
                 if (!$id_usuario) {
@@ -176,7 +169,6 @@ try {
             }
             break;
 
-        // ❤️ NOTIFICAR LIKE
         case 'notificar_like':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -192,20 +184,17 @@ try {
                 break;
             }
 
-            // Evitar auto-notificaciones
             if ($id_usuario_origen == $id_usuario_destino) {
                 echo json_encode(['success' => true, 'mensaje' => 'No se notifica like propio']);
                 break;
             }
 
             try {
-                // Obtener información del reporte
                 $sqlReporte = "SELECT descripcion FROM reporte WHERE id_reporte = ?";
                 $stmtReporte = $db->prepare($sqlReporte);
                 $stmtReporte->execute([$id_reporte]);
                 $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
 
-                // Obtener nombre del usuario que dio like
                 $sqlUsuario = "SELECT p.nombres, p.apellidos
                               FROM usuario u
                               INNER JOIN persona p ON u.id_persona = p.id_persona
@@ -234,7 +223,6 @@ try {
             }
             break;
 
-        // 💬 NOTIFICAR COMENTARIO
         case 'notificar_comentario':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -250,20 +238,16 @@ try {
                 break;
             }
 
-            // Evitar auto-notificaciones
             if ($id_usuario_origen == $id_usuario_destino) {
                 echo json_encode(['success' => true, 'mensaje' => 'No se notifica comentario propio']);
                 break;
             }
 
             try {
-                // Obtener información del reporte
                 $sqlReporte = "SELECT descripcion FROM reporte WHERE id_reporte = ?";
                 $stmtReporte = $db->prepare($sqlReporte);
                 $stmtReporte->execute([$id_reporte]);
                 $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
-
-                // Obtener nombre del usuario que comentó
                 $sqlUsuario = "SELECT p.nombres, p.apellidos
                             FROM usuario u
                             INNER JOIN persona p ON u.id_persona = p.id_persona
@@ -292,7 +276,6 @@ try {
             }
             break;
 
-        // 📢 NOTIFICAR NUEVO REPORTE A OTROS USUARIOS
         case 'notificar_nuevo_reporte_usuario':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -308,7 +291,6 @@ try {
             }
 
             try {
-                // Obtener información del reporte
                 $sqlReporte = "SELECT r.descripcion, ti.nombre as tipo_incidente
                             FROM reporte r
                             INNER JOIN tipo_incidente ti ON r.id_tipo_incidente = ti.id_tipo_incidente
@@ -317,7 +299,6 @@ try {
                 $stmtReporte->execute([$id_reporte]);
                 $reporte = $stmtReporte->fetch(PDO::FETCH_ASSOC);
 
-                // Obtener nombre del usuario que creó el reporte
                 $sqlUsuario = "SELECT p.nombres, p.apellidos
                             FROM usuario u
                             INNER JOIN persona p ON u.id_persona = p.id_persona
@@ -333,7 +314,6 @@ try {
 
                 $mensaje = "📢 {$nombre_usuario} reportó un {$tipo_incidente}: \"{$descripcion_corta}\"";
 
-                // Notificar a todos los usuarios activos (excepto al que creó el reporte)
                 $sqlUsuarios = "SELECT id_usuario FROM usuario WHERE id_estado = 1 AND id_usuario != ?";
                 $stmtUsuarios = $db->prepare($sqlUsuarios);
                 $stmtUsuarios->execute([$id_usuario_origen]);

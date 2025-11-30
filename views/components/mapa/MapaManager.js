@@ -8,7 +8,7 @@ export class MapaManager {
         this.markerNuevo = null;
         this.managers = {};
     }
-    
+
     inicializar(containerId = 'map') {
         try {
             this.map = L.map(containerId, {
@@ -20,10 +20,10 @@ export class MapaManager {
                 doubleClickZoom: true,
                 boxZoom: true
             }).setView(Config.map.defaultCenter, Config.map.defaultZoom);
-            
+
             this._cargarMapaBase();
             this._configurarEventos();
-            
+
             console.log('✅ Mapa inicializado correctamente');
             return this.map;
         } catch (error) {
@@ -31,7 +31,7 @@ export class MapaManager {
             throw error;
         }
     }
-    
+
     _cargarMapaBase() {
         L.tileLayer(Config.map.tileLayer, {
             maxZoom: Config.map.maxZoom,
@@ -39,14 +39,14 @@ export class MapaManager {
             subdomains: 'abc'
         }).addTo(this.map);
     }
-    
+
     _configurarEventos() {
         // Evento de clic en el mapa para seleccionar ubicación
         this.map.on('click', (e) => {
             console.log('🗺️ Clic en mapa detectado:', e.latlng);
             this.seleccionarUbicacion(e.latlng);
         });
-        
+
         // Mejorar experiencia de hover en marcadores
         this.map.on('popupopen', (e) => {
             const marker = e.popup._source;
@@ -55,30 +55,26 @@ export class MapaManager {
             }
         });
     }
-    
+
     seleccionarUbicacion(latlng) {
         const { lat, lng } = latlng;
-        
-        // Remover marcador anterior si existe
+
         this.limpiarMarcadorTemporal();
-        
-        // Crear nuevo marcador
+
         this.markerNuevo = L.marker([lat, lng], {
             icon: this._crearIconoSeleccionado(),
             zIndexOffset: 1000
         }).addTo(this.map);
-        
-        // 🆕 ACTUALIZAR: Notificar al sistema de formularios
+
         this._notificarFormularioCoordenadas(lat, lng);
-        
+
         // Mostrar popup
         this.markerNuevo.bindPopup(this._crearPopupSeleccionado(lat, lng)).openPopup();
     }
 
-    // 🆕 AGREGAR este método nuevo:
     _notificarFormularioCoordenadas(lat, lng) {
         console.log('📍 Notificando coordenadas al formulario:', lat, lng);
-        
+
         // Método 1: Usar el sistema global
         if (window.formularioSistema) {
             window.formularioSistema.updateCoordinates(lat, lng);
@@ -99,7 +95,7 @@ export class MapaManager {
             document.dispatchEvent(event);
         }
     }
-    
+
     _crearIconoSeleccionado() {
         return L.divIcon({
             className: 'custom-marker marker-selected',
@@ -109,7 +105,7 @@ export class MapaManager {
             popupAnchor: [0, -45]
         });
     }
-    
+
     _crearPopupSeleccionado(lat, lng) {
         return '<div style="text-align: center; padding: 10px; min-width: 200px;">' +
                '<div style="font-size: 16px; font-weight: bold; color: #e74c3c; margin-bottom: 8px;">📍 Ubicación Seleccionada</div>' +
@@ -120,23 +116,23 @@ export class MapaManager {
                '<div style="margin-top: 8px; font-size: 11px; color: #666;">Haz clic en "Registrar Reporte" para guardar</div>' +
                '</div>';
     }
-    
+
     limpiarMarcadorTemporal() {
         if (this.markerNuevo) {
             this.map.removeLayer(this.markerNuevo);
             this.markerNuevo = null;
         }
     }
-    
+
     // Métodos públicos para interactuar con otros managers
     getMap() {
         return this.map;
     }
-    
+
     setManager(nombre, manager) {
         this.managers[nombre] = manager;
     }
-    
+
     getManager(nombre) {
         return this.managers[nombre];
     }
@@ -144,12 +140,12 @@ export class MapaManager {
     mostrarAlerta(mensaje, tipo = 'success') {
         const alertSuccess = document.getElementById('alertSuccess');
         const alertError = document.getElementById('alertError');
-        
+
         if (tipo === 'success') {
             alertSuccess.textContent = mensaje;
             alertSuccess.style.display = 'block';
             alertError.style.display = 'none';
-            
+
             setTimeout(() => {
                 alertSuccess.style.display = 'none';
             }, 5000);
@@ -159,14 +155,14 @@ export class MapaManager {
             alertSuccess.style.display = 'none';
         }
     }
-    
+
     destruir() {
         if (this.map) {
             this.map.off();
             this.map.remove();
             this.map = null;
         }
-        
+
         this.markers = [];
         this.markerNuevo = null;
         this.managers = {};

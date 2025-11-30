@@ -39,7 +39,6 @@ class ConnectionManager {
         this.isChecking = true;
 
         try {
-            // 🆕 VERIFICACIÓN SEGURA SIN GOOGLE
             const isActuallyOnline = await this.safeConnectionCheck();
 
             if (isActuallyOnline) {
@@ -49,7 +48,7 @@ class ConnectionManager {
             }
 
         } catch (error) {
-            console.log('🔍 Verificación: Error', error);
+            console.log('Verificación: Error', error);
             this.handleOfflineDetection();
         } finally {
             this.isChecking = false;
@@ -58,12 +57,11 @@ class ConnectionManager {
 
     async safeConnectionCheck() {
         const checks = [
-            this.quickHeadCheck(),    // Verificación a nuestro servidor
-            this.corsSafeCheck()      // Verificación CORS-safe
+            this.quickHeadCheck(),
+            this.corsSafeCheck()
         ];
 
         try {
-            // Si alguna verificación pasa, estamos online
             const result = await Promise.any(checks.map(check =>
                 check.then(result => {
                     if (!result) throw new Error('Check failed');
@@ -78,7 +76,6 @@ class ConnectionManager {
 
     async quickHeadCheck() {
         try {
-            // Verificación ultra rápida a nuestro propio servidor
             const response = await fetch(window.location.origin + '/?connection-check=' + Date.now(), {
                 method: 'HEAD',
                 cache: 'no-cache',
@@ -92,20 +89,17 @@ class ConnectionManager {
 
     async corsSafeCheck() {
         return new Promise((resolve) => {
-            // 🆕 VERIFICACIÓN COMPLETAMENTE SEGURA SIN CORS
-            // Usar XMLHttpRequest que es más tolerante
             const xhr = new XMLHttpRequest();
             xhr.timeout = 3000;
 
             xhr.onload = () => {
-                // Si podemos hacer la petición (aunque falle por CORS), tenemos conexión
+
                 resolve(true);
             };
 
             xhr.onerror = () => resolve(false);
             xhr.ontimeout = () => resolve(false);
 
-            // Intentar cargar un recurso local que siempre exista
             xhr.open('HEAD', window.location.origin + '/favicon.ico?' + Date.now());
             xhr.send();
         });
@@ -132,7 +126,6 @@ class ConnectionManager {
         }
     }
 
-    // 🆕 VERIFICACIÓN INTELIGENTE CON BACKOFF
     startIntelligentChecking() {
         const checkWithBackoff = () => {
             const delay = this.getNextCheckDelay();
@@ -296,7 +289,7 @@ class ConnectionManager {
             try {
                 window.mapaSistema.getMap().removeLayer(this.offlineMapOverlay);
             } catch (error) {
-                console.log('⚠️ Error removiendo overlay del mapa:', error);
+                console.log('Error removiendo overlay del mapa:', error);
             }
             this.offlineMapOverlay = null;
         }

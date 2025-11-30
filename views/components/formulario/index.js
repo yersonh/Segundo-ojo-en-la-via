@@ -1,14 +1,11 @@
-// Punto de entrada principal para el sistema de formularios
-import FormManager from './FormManager.js'; // Importación por defecto
+import FormManager from './FormManager.js';
 import { ValidationManager } from './ValidationManager.js';
 import { UIManager } from './UIManager.js';
 import { ImageManager } from './ImageManager.js';
 import { CameraManager } from './CameraManager.js';
 
-// Re-exportar todos los managers para uso individual
 export { FormManager, ValidationManager, UIManager, ImageManager, CameraManager };
 
-// Sistema principal que orquesta todos los componentes
 export class SistemaFormulario {
     constructor() {
         this.formManager = new FormManager();
@@ -17,7 +14,7 @@ export class SistemaFormulario {
 
     initialize() {
         if (this.initialized) return;
-        
+
         try {
             this.formManager.initialize();
             this.initialized = true;
@@ -29,7 +26,6 @@ export class SistemaFormulario {
         }
     }
 
-    // Métodos de conveniencia para acceso rápido
     getFormManager() {
         return this.formManager;
     }
@@ -46,13 +42,11 @@ export class SistemaFormulario {
         this.formManager.handleConnectionChange(online);
     }
 
-    // Método para backward compatibility
     limpiarFormulario() {
         this.formManager.limpiarFormulario();
     }
 }
 
-// Exportar instancia singleton para uso global
 export const formularioSistema = new SistemaFormulario();
 
 // Exportar para uso tradicional (backward compatibility)

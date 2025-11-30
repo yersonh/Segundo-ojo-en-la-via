@@ -8,7 +8,6 @@ class Database {
     private $conn;
 
     public function __construct() {
-        // Verificar si la extensión pdo_pgsql está instalada
         if (!extension_loaded('pdo_pgsql')) {
             error_log("Extensión pdo_pgsql no está instalada");
             return;

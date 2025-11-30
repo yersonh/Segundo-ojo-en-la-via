@@ -8,10 +8,10 @@ const BuscadorManager = {
 
     inicializar(map) {
         this.map = map;
-        console.log('✅ BuscadorManager inicializado');
+        console.log('BuscadorManager inicializado');
 
         this.inicializarEventos();
-        this.obtenerUbicacionUsuario(); // Intentar obtener ubicación al iniciar
+        this.obtenerUbicacionUsuario();
     },
 
     inicializarEventos() {
@@ -19,18 +19,16 @@ const BuscadorManager = {
         const searchResults = document.getElementById('searchResults');
 
         if (!searchInput) {
-            console.error('❌ No se encontró el elemento searchInput');
+            console.error('No se encontró el elemento searchInput');
             return;
         }
 
-        // Buscar al presionar Enter
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.buscarDireccion();
             }
         });
 
-        // Ocultar resultados al hacer clic fuera
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.search-container')) {
                 if (searchResults) searchResults.style.display = 'none';
@@ -51,10 +49,8 @@ const BuscadorManager = {
             }
         });
 
-        console.log('✅ Eventos del buscador inicializados');
     },
 
-    // FUNCIÓN PRINCIPAL DE BÚSQUEDA
     async buscarDireccion() {
         const searchInput = document.getElementById('searchInput');
         const query = searchInput.value.trim();
@@ -79,7 +75,6 @@ const BuscadorManager = {
         }
     },
 
-    // API CALL A OPENSTREETMAP CON BÚSQUEDA CONTEXTUAL
     async buscarConOpenStreetMap(query) {
         try {
             let url = `https://nominatim.openstreetmap.org/search?` +
@@ -90,7 +85,6 @@ const BuscadorManager = {
                 `accept-language=es&` +
                 `addressdetails=1`;
 
-            // 🎯 BÚSQUEDA CONTEXTUAL SI TENEMOS UBICACIÓN
             if (this.userLocation) {
                 url += `&viewbox=${this.getViewboxAroundUser()}`;
                 url += `&bounded=1`;
@@ -105,7 +99,6 @@ const BuscadorManager = {
 
             const data = await response.json();
 
-            // ORDENAR POR DISTANCIA SI TENEMOS UBICACIÓN
             if (this.userLocation && data.length > 0) {
                 return this.ordenarResultadosPorDistancia(data);
             }
@@ -118,7 +111,6 @@ const BuscadorManager = {
         }
     },
 
-    // MOSTRAR RESULTADOS DE BÚSQUEDA
     mostrarResultadosBusqueda(resultados) {
         const resultsContainer = document.getElementById('searchResults');
         if (!resultsContainer) return;
@@ -171,13 +163,11 @@ const BuscadorManager = {
         resultsContainer.innerHTML = html;
         resultsContainer.style.display = 'block';
 
-        // MOSTRAR INFO CONTEXTUAL
         if (this.userLocation) {
             this.mostrarInfoContextual();
         }
     },
 
-    // SELECCIONAR RESULTADO DE BÚSQUEDA
     seleccionarResultadoBusqueda(index) {
         const resultsContainer = document.getElementById('searchResults');
         const selectedResult = this.currentSearchResults[index];
@@ -190,23 +180,18 @@ const BuscadorManager = {
         if (resultsContainer) resultsContainer.style.display = 'none';
     },
 
-    // PROCESAR RESULTADO SELECCIONADO
     procesarResultadoSeleccionado(resultado) {
         const lat = parseFloat(resultado.lat);
         const lon = parseFloat(resultado.lon);
 
-        // Limpiar marcador anterior
         if (this.searchMarker) {
             this.map.removeLayer(this.searchMarker);
         }
 
-        // Mover mapa a la ubicación
         this.map.flyTo([lat, lon], 16, {
             duration: 1.5,
             easeLinearity: 0.25
         });
-
-        // Crear marcador de búsqueda
         this.searchMarker = L.marker([lat, lon], {
             icon: L.divIcon({
                 className: 'search-marker',
@@ -266,26 +251,21 @@ const BuscadorManager = {
             </div>
         `).openPopup();
 
-        // Actualizar campo de búsqueda
         const searchInput = document.getElementById('searchInput');
         if (searchInput) searchInput.value = resultado.display_name;
     },
 
-    // USAR UBICACIÓN ENCONTRADA EN EL FORMULARIO
     usarEstaUbicacion(lat, lng) {
-        // Actualizar coordenadas en el formulario
         if (typeof FormularioManager !== 'undefined' && FormularioManager.actualizarCoordenadas) {
             FormularioManager.actualizarCoordenadas(lat, lng);
         }
 
-        // Cerrar popup
         if (this.searchMarker) {
             this.searchMarker.closePopup();
         }
 
     },
 
-    // GESTIÓN DE UBICACIÓN DEL USUARIO
     async obtenerUbicacionUsuario() {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
@@ -365,7 +345,6 @@ const BuscadorManager = {
         if (existingInfo) existingInfo.remove();
     },
 
-    // FUNCIONES AUXILIARES
     getViewboxAroundUser() {
         if (!this.userLocation) return '';
 
