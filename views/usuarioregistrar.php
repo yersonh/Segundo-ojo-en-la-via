@@ -3,7 +3,6 @@ require_once __DIR__ . '/../config/bootstrap_session.php';
 
 header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self'; frame-src 'none'; object-src 'none';");
 
-// Medidas de seguridad adicionales
 header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: strict-origin-when-cross-origin");
@@ -16,29 +15,23 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Crear conexión
 $database = new Database();
 $db = $database->conectar();
 
-// Instanciar controlador
 $controller = new SesionControlador($db);
 
-// Manejo de registro
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
 
-    // Validar token CSRF
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die("Token de seguridad inválido");
     }
 
-    // Limpiar y validar datos
     $nombres = trim(htmlspecialchars($_POST['nombres'] ?? ''));
     $apellidos = trim(htmlspecialchars($_POST['apellidos'] ?? ''));
     $correo = filter_var(trim($_POST['correo'] ?? ''), FILTER_VALIDATE_EMAIL);
     $telefono = preg_replace('/[^0-9]/', '', $_POST['telefono'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // Validaciones adicionales
     if (empty($nombres) || strlen($nombres) > 50) {
         die("Nombre inválido");
     }
@@ -59,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
         die("La contraseña debe tener al menos 8 caracteres");
     }
 
-    // Validar fortaleza de contraseña
     if (!preg_match('/[A-Z]/', $password) ||
         !preg_match('/[a-z]/', $password) ||
         !preg_match('/[0-9]/', $password)) {
@@ -77,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
     );
 
     if ($resultado) {
-        // Regenerar sesión después del registro exitoso
         session_regenerate_id(true);
         $_SESSION = [];
 
@@ -389,12 +380,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             strengthElement.textContent = `Fortaleza: ${feedback}`;
         });
 
-        // Verificar correo al perder foco
         document.getElementById("correo").addEventListener("blur", function() {
             verificarCorreo(this.value);
         });
 
-        // Verificar correo mientras se escribe
         let timeoutId;
         document.getElementById("correo").addEventListener("input", function() {
             clearTimeout(timeoutId);
@@ -467,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
 
             if (alerta.style.display === "inline") {
                 e.preventDefault();
-                mostrarAlerta("❌ Por favor, usa un correo electrónico que no esté registrado.", "error");
+                mostrarAlerta("Por favor, usa un correo electrónico que no esté registrado.", "error");
                 return false;
             }
 
@@ -496,7 +485,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registrar'])) {
             return true;
         });
 
-        // Validar teléfono (solo números)
         document.getElementById("telefono").addEventListener("input", function(e) {
             this.value = this.value.replace(/[^0-9]/g, '');
         });

@@ -47,7 +47,6 @@ class SSENotificacionesManager {
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
 
-                // Notificar a los manejadores personalizados
                 this.ejecutarManejadores('conexion_establecida', {});
             };
 
@@ -56,11 +55,9 @@ class SSENotificacionesManager {
                 console.log('Ping SSE recibido', data);
                 this.userRole = data.user_role;
 
-                // Notificar a los manejadores personalizados
                 this.ejecutarManejadores('ping', data);
             });
 
-            // NOTIFICACIONES PARA USUARIOS NORMALES
             this.eventSource.addEventListener('notificacion', (event) => {
                 const data = JSON.parse(event.data);
                 console.log('Notificación usuario recibida:', data);
@@ -69,7 +66,6 @@ class SSENotificacionesManager {
                     this.manejarNuevasNotificacionesUsuario(data);
                 }
 
-                // Notificar a los manejadores personalizados
                 this.ejecutarManejadores('notificacion', data);
             });
 
@@ -88,7 +84,6 @@ class SSENotificacionesManager {
                 console.log('Conectado al servidor SSE, user_id:', data.user_id, 'rol:', data.user_role);
                 this.userRole = data.user_role;
 
-                // Notificar a los manejadores personalizados
                 this.ejecutarManejadores('connected', data);
             });
 
@@ -97,7 +92,6 @@ class SSENotificacionesManager {
                 this.isConnected = false;
                 this.manejarErrorConexion();
 
-                // Notificar a los manejadores personalizados
                 this.ejecutarManejadores('error', { error });
             };
 
@@ -116,17 +110,15 @@ class SSENotificacionesManager {
                 try {
                     manejador(data);
                 } catch (error) {
-                    console.error(`❌ Error en manejador personalizado para ${evento}:`, error);
+                    console.error(`Error en manejador personalizado para ${evento}:`, error);
                 }
             }
         });
     }
 
     manejarNuevasNotificacionesUsuario(data) {
-        // Actualizar badge para usuarios normales
         this.actualizarBadge(data.total);
-
-        // Mostrar toast si no está en vista de notificaciones
+s
         if (!this.estaEnVistaNotificaciones()) {
             this.mostrarToastNotificacion(data.total, 'usuario');
         }
@@ -135,13 +127,10 @@ class SSENotificacionesManager {
     }
 
     manejarNuevoReporteAdmin(data) {
-        // Solo procesar si el usuario actual es admin
         if (this.userRole !== 1) return;
 
-        // Mostrar notificación específica para admin
         this.mostrarToastNotificacionAdmin(data);
 
-        // Actualizar contador de reportes pendientes si existe
         this.actualizarContadorReportesAdmin();
 
         this.reproducirSonidoNotificacion('admin');
@@ -278,7 +267,7 @@ class SSENotificacionesManager {
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts <= this.maxReconnectAttempts) {
-            console.log(`🔄 Reconectando SSE en ${this.reconnectDelay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            console.log(`Reconectando SSE en ${this.reconnectDelay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
             setTimeout(() => {
                 this.conectar();
@@ -286,7 +275,7 @@ class SSENotificacionesManager {
 
             this.reconnectDelay *= 1.5;
         } else {
-            console.error('❌ Máximo de intentos de reconexión SSE alcanzado');
+            console.error('Máximo de intentos de reconexión SSE alcanzado');
         }
     }
 
@@ -306,7 +295,6 @@ class SSENotificacionesManager {
     }
 }
 
-// Función global para admin (debe existir en el panel de admin)
 window.verReporteAdmin = function(id_reporte) {
     // Redirigir al reporte específico en el panel de admin
     console.log('📋 Redirigiendo al reporte:', id_reporte);

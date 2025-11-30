@@ -16,7 +16,6 @@ $idUsuarioActual = $_SESSION['usuario_id'];
 $notificacionesNoLeidas = $adminControlador->contarNotificacionesNoLeidas($idUsuarioActual);
 $notificaciones = $adminControlador->obtenerNotificacionesNoLeidas($idUsuarioActual, 5);
 
-// Procesar acciones AJAX (NO redireccionar)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
 
@@ -70,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Solo obtener datos para la vista (no procesar acciones que redirijan)
 $estadisticas = $adminControlador->obtenerEstadisticas();
 $reportes = $adminControlador->obtenerReportes(50);
 $usuarios = $adminControlador->obtenerUsuarios();

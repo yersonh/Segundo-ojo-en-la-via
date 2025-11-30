@@ -1,6 +1,5 @@
 // Panel.js - Versión corregida con sistema de likes funcionando
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando panel...');
 
     setTimeout(() => {
         try {
@@ -9,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const mainContent = document.querySelector('.main');
             const navActivationZone = document.createElement('div');
 
-            // Crear zona de activación
             navActivationZone.className = 'nav-activation-zone';
             document.body.appendChild(navActivationZone);
 
@@ -19,14 +17,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let lastScrollTop = 0;
             let scrollDirection = 'down';
 
-            // Inicializar navegación
             navItems.forEach(i => i.addEventListener('click', onNavClick));
             initAutoHideNav();
 
-            // Cargar datos iniciales del feed
             cargarFeedSuave();
 
-            console.log('✅ Panel inicializado correctamente');
 
             function initAutoHideNav() {
                 hideTimeout = setTimeout(hideNavigation, 3000);
@@ -135,13 +130,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (targetElement) {
                     targetElement.style.display = 'block';
 
-                    // CARGAR CONTENIDO ESPECÍFICO DE CADA VISTA
                     if (target === 'feedView') {
                         cargarFeedSuave();
                     } else if (target === 'notificationsView') {
                         cargarNotificacionesSuave();
                     } else if (target === 'profileView') {
-                        // 🆕 CARGAR ESTADÍSTICAS DEL PERFIL
                         cargarEstadisticasPerfil();
                     }
 
@@ -181,17 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } catch (error) {
-            console.error('❌ Error durante la inicialización:', error);
+            console.error('Error durante la inicialización:', error);
         }
     }, 100);
 });
 
-// 🆕 FUNCIÓN PARA CARGAR ESTADÍSTICAS DEL PERFIL
 async function cargarEstadisticasPerfil() {
-    console.log('📊 Cargando estadísticas del perfil...');
 
     try {
-        // Mostrar estado de carga
         actualizarEstadisticasUI({
             reports: '...',
             likes: '...',
@@ -199,7 +189,6 @@ async function cargarEstadisticasPerfil() {
             views: '...'
         });
 
-        // 🚨 URL SIMPLE - sin parámetros extra
         const resp = await fetch('../../controllers/usuario_controlador.php?action=obtener_estadisticas', {
             method: 'GET',
             credentials: 'include'
@@ -212,14 +201,13 @@ async function cargarEstadisticasPerfil() {
         const data = await resp.json();
 
         if (data.success) {
-            console.log('✅ Estadísticas cargadas:', data.estadisticas);
             actualizarEstadisticasUI(data.estadisticas);
         } else {
             throw new Error(data.error || 'Error al cargar estadísticas');
         }
 
     } catch (error) {
-        console.error('❌ Error cargando estadísticas:', error);
+        console.error('Error cargando estadísticas:', error);
         // Mostrar valores por defecto
         actualizarEstadisticasUI({
             reports: '0',
@@ -230,7 +218,6 @@ async function cargarEstadisticasPerfil() {
     }
 }
 
-// 🆕 FUNCIÓN PARA ACTUALIZAR LA UI CON LAS ESTADÍSTICAS
 function actualizarEstadisticasUI(estadisticas) {
     const elementos = {
         reports: document.getElementById('statReports'),
@@ -243,7 +230,6 @@ function actualizarEstadisticasUI(estadisticas) {
         if (element && estadisticas[key] !== undefined) {
             element.textContent = estadisticas[key];
 
-            // Animación simple al actualizar
             element.style.transform = 'scale(1.1)';
             setTimeout(() => {
                 element.style.transform = 'scale(1)';
@@ -252,7 +238,6 @@ function actualizarEstadisticasUI(estadisticas) {
     }
 }
 
-// FUNCIÓN PARA VERIFICAR SESIÓN
 async function verificarSesion() {
     try {
         const resp = await fetch('../../controllers/usuario_controlador.php?action=verificar_sesion', {
@@ -261,10 +246,10 @@ async function verificarSesion() {
         });
 
         const data = await resp.json();
-        console.log('🔐 Estado sesión:', data);
+        console.log('Estado sesión:', data);
 
         if (!data.sesion_activa) {
-            console.warn('⚠️ Sesión no activa, redirigiendo...');
+            console.warn('Sesión no activa, redirigiendo...');
             window.location.href = '../../index.php';
             return false;
         }
@@ -276,28 +261,24 @@ async function verificarSesion() {
     }
 }
 
-// FUNCIÓN MEJORADA PARA CARGAR IMÁGENES
 function cargarImagenSegura(elemento, url) {
     if (!elemento) return;
 
-    // Si no hay URL o está vacía, usar imagen por defecto
     if (!url || url === '' || url === 'null') {
         elemento.src = window.location.origin + '/imagenes/default-avatar.png';
         return;
     }
 
-    // Si la URL ya es absoluta, usarla directamente
     if (url.startsWith('http')) {
         elemento.src = url;
     } else {
-        // Si es relativa, convertir a absoluta
         const baseUrl = window.location.origin;
         elemento.src = baseUrl + (url.startsWith('/') ? url : '/' + url);
     }
 
     // Manejar errores de carga de manera más robusta
     elemento.onerror = function() {
-        console.warn('❌ Error cargando imagen:', this.src);
+        console.warn('Error cargando imagen:', this.src);
         // Usar imagen por defecto absoluta
         this.src = window.location.origin + '/imagenes/default-avatar.png';
         this.onerror = null; // Prevenir bucles infinitos
@@ -305,7 +286,7 @@ function cargarImagenSegura(elemento, url) {
 
     // Verificar si la imagen carga correctamente
     elemento.onload = function() {
-        console.log('✅ Imagen cargada correctamente:', this.src);
+        console.log('Imagen cargada correctamente:', this.src);
     };
 }
 
@@ -317,11 +298,11 @@ function aplicarCargaSeguraAvatares() {
 
 // Cargar feed de forma segura
 async function cargarFeedSuave() {
-    console.log('📰 Cargando feed de reportes...');
+    console.log('Cargando feed de reportes...');
 
     const feedView = document.getElementById('feedView');
     if (!feedView) {
-        console.error('❌ feedView no encontrado');
+        console.error('feedView no encontrado');
         return;
     }
 
@@ -351,7 +332,7 @@ async function cargarFeedSuave() {
         // MANEJO SEGURO DE ERRORES - SIN REDIRECCIONES
         if (!resp.ok) {
             if (resp.status === 401) {
-                console.warn('⚠️ Posible problema de sesión al cargar feed');
+                console.warn('Posible problema de sesión al cargar feed');
                 // No redirigir, solo mostrar error
                 throw new Error('Problema de autenticación');
             }
@@ -389,7 +370,6 @@ async function cargarFeedSuave() {
                 }
             });
 
-            // 🆕 APLICAR CARGA SEGURA A TODOS LOS AVATARES
             aplicarCargaSeguraAvatares();
         } else {
             feedView.innerHTML = '';
@@ -405,10 +385,10 @@ async function cargarFeedSuave() {
             });
         }
 
-        console.log(`✅ Feed cargado: ${data.length} reportes`);
+        console.log(`Feed cargado: ${data.length} reportes`);
 
     } catch (err) {
-        console.error('❌ Error cargando feed:', err);
+        console.error('Error cargando feed:', err);
 
         // MOSTRAR ERROR SIN REDIRIGIR
         if (postsContainer && loadingPosts && noPosts) {
@@ -537,7 +517,6 @@ async function obtenerUsuarioId() {
     return 0;
 }
 
-// ✅ FUNCIÓN CORREGIDA PARA TOGGLE LIKE
 window.toggleLike = async function(id_reporte, btn) {
     try {
         const id_usuario = await obtenerUsuarioId();
@@ -566,7 +545,6 @@ window.toggleLike = async function(id_reporte, btn) {
                 likeCount.textContent = Math.max(0, currentCount - 1);
             }
 
-            // ✅ ACTUALIZAR CONTADOR REAL DESDE EL SERVIDOR
             const postElement = btn.closest('.post');
             if (postElement) {
                 await cargarLikesPost(id_reporte, postElement);
@@ -580,7 +558,6 @@ window.toggleLike = async function(id_reporte, btn) {
     }
 }
 
-// Función para crear elemento de post
 function crearPostElement(reporte) {
     try {
         let avatarUrl = '/imagenes/default-avatar.png';
@@ -590,13 +567,11 @@ function crearPostElement(reporte) {
             reporte.foto_perfil !== 'null' &&
             reporte.foto_perfil !== null) {
 
-            // Si la URL es relativa, hacerla absoluta
             if (reporte.foto_perfil.startsWith('/')) {
                 avatarUrl = window.location.origin + reporte.foto_perfil;
             } else if (reporte.foto_perfil.startsWith('http')) {
                 avatarUrl = reporte.foto_perfil;
             } else {
-                // Si es una ruta relativa sin slash inicial
                 avatarUrl = window.location.origin + '/' + reporte.foto_perfil;
             }
         }
@@ -668,7 +643,6 @@ function crearPostElement(reporte) {
             </div>
         `;
 
-        // Agregar event listeners
         const likeBtn = div.querySelector('.like-btn');
         const commentBtn = div.querySelector('.comment-btn');
         const viewMapBtn = div.querySelector('.view-map-btn');
@@ -693,7 +667,6 @@ function crearPostElement(reporte) {
             streetInfo.addEventListener('click', () => navegarAlMapa(reporte));
         }
 
-        // Cargar datos de likes y comentarios después de crear el elemento
         setTimeout(() => {
             cargarLikesPost(reporte.id_reporte, div);
             cargarComentariosPost(reporte.id_reporte, div);
@@ -708,7 +681,6 @@ function crearPostElement(reporte) {
     }
 }
 
-// ✅ FUNCIÓN CORREGIDA PARA CARGAR LIKES DE UN POST
 async function cargarLikesPost(id_reporte, postElement) {
     try {
         const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_likes&id_reporte=${id_reporte}`, {
@@ -725,7 +697,6 @@ async function cargarLikesPost(id_reporte, postElement) {
     }
 }
 
-// Función para cargar comentarios de un post
 async function cargarComentariosPost(id_reporte, postElement) {
     try {
         const resp = await fetch(`../../controllers/reportecontrolador.php?action=contar_comentarios&id_reporte=${id_reporte}`, {
@@ -745,11 +716,10 @@ async function cargarComentariosPost(id_reporte, postElement) {
     }
 }
 
-// ✅ FUNCIÓN CORREGIDA PARA VERIFICAR SI EL USUARIO ACTUAL DIO LIKE
 async function verificarLikeUsuario(id_reporte, postElement) {
     try {
         const id_usuario = await obtenerUsuarioId();
-        const formData = new FormData(); // ✅ CORREGIDO: FormData en lugar de FormdData
+        const formData = new FormData();
         formData.append('id_reporte', id_reporte);
         formData.append('id_usuario', id_usuario);
 
@@ -770,7 +740,6 @@ async function verificarLikeUsuario(id_reporte, postElement) {
     }
 }
 
-// Función auxiliar para crear estructura de imágenes simple
 function crearEstructuraImagenesSimple(imagenes) {
     if (!imagenes || imagenes.length === 0) return '';
 
@@ -814,7 +783,6 @@ function crearEstructuraImagenesSimple(imagenes) {
     }
 }
 
-// Función para navegar al mapa con el reporte específico
 function navegarAlMapa(reporte) {
     const mapNavItem = document.querySelector('.nav-item[data-target="mapView"]');
     if (mapNavItem) {
@@ -826,7 +794,6 @@ function navegarAlMapa(reporte) {
     }
 }
 
-// Función para enviar las coordenadas al iframe del mapa
 function enviarCoordenadasAlMapa(reporte) {
     const mapIframe = document.querySelector('#mapView iframe');
     if (mapIframe && mapIframe.contentWindow) {
@@ -860,7 +827,6 @@ function enviarCoordenadasAlMapa(reporte) {
     }
 }
 
-// Función para abrir mapa en pantalla completa
 function abrirMapaCompleto() {
     const url = window.mapUrl || '<?php echo $mapUrl; ?>';
     const ventanaMapa = window.open(url, 'MapaOjoEnLaVia',
@@ -873,7 +839,6 @@ function abrirMapaCompleto() {
     }
 }
 
-// Utilidades
 function tiempoRelativo(date) {
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
